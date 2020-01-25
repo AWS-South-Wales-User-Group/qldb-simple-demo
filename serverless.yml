@@ -19,6 +19,40 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: eu-west-1
 
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-pseudo-parameters
+
+functions:
+  createTable:
+    name: qldb-demo-table-${self:provider.stage}
+    handler: functions/createTable.handler
+    memorySize: 256
+    timeout: 6
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:SendCommand
+        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
+    environment:
+      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
+      TABLE_NAME: Vehicle
+
+  createIndex:
+    name: qldb-demo-index-${self:provider.stage}
+    handler: functions/createIndex.handler
+    memorySize: 256
+    timeout: 6
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:SendCommand
+        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
+    environment:
+      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
+      TABLE_NAME: Vehicle
+      INDEX_NAME: VRN
+
 resources:
   Resources:
     qldbGuideLedger:
@@ -31,3 +65,17 @@ resources:
           - 
             Key: name
             Value: qldb-simple-demo
+
+    qldbTable:
+      Type: Custom::qldbTable
+      DependsOn: qldbGuideLedger
+      Properties:
+        ServiceToken: !GetAtt CreateTableLambdaFunction.Arn
+        Version: 1.0  #change this to force redeploy
+
+    qldbIndex:
+      Type: Custom::qldbIndexes
+      DependsOn: qldbTable
+      Properties:
+        ServiceToken: !GetAtt CreateIndexLambdaFunction.Arn
+        Version: 1.0  #change this to force redeploy

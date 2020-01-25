@@ -15,5 +15,14 @@
   "bugs": {
     "url": "https://github.com/mlewis7127/qldb-simple-demo/issues"
   },
-  "homepage": "https://github.com/mlewis7127/qldb-simple-demo#readme"
+  "homepage": "https://github.com/mlewis7127/qldb-simple-demo#readme",
+  "dependencies": {
+    "amazon-qldb-driver-nodejs": "^0.1.1-preview.2",
+    "aws-sdk": "^2.610.0",
+    "cfn-response-promise": "^1.0.1"
+  },
+  "devDependencies": {
+    "serverless-iam-roles-per-function": "^2.0.2",
+    "serverless-pseudo-parameters": "^2.5.0"
+  }
 }

@@ -1,0 +1,19 @@
+{
+  "name": "qldb-simple-demo",
+  "version": "1.0.0",
+  "description": "Simple demo for QLDB",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mlewis7127/qldb-simple-demo.git"
+  },
+  "author": "Matt Lewis",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mlewis7127/qldb-simple-demo/issues"
+  },
+  "homepage": "https://github.com/mlewis7127/qldb-simple-demo#readme"
+}

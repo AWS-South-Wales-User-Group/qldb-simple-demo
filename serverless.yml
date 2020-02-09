@@ -16,6 +16,7 @@ service: qldb-simple-demo
 provider:
   name: aws
   runtime: nodejs10.x
+  memorySize: 512
   stage: ${opt:stage, 'dev'}
   region: eu-west-1
 
@@ -24,6 +25,38 @@ plugins:
   - serverless-pseudo-parameters
 
 functions:
+  createVehicle:
+    name: create-vehicle-${self:provider.stage}
+    handler: functions/create-vehicle.handler
+    events:
+      - http:
+          path: /vehicle
+          method: post
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:SendCommand
+        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
+    environment:
+      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
+
+
+  get-vehicle:
+    name: get-vehicle-${self:provider.stage}
+    handler: functions/get-vehicle.handler
+    events:
+      - http:
+          path: /vehicle/{vehicleId}
+          method: get
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:SendCommand
+        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
+    environment:
+      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
+
+
   createTable:
     name: qldb-demo-table-${self:provider.stage}
     handler: functions/createTable.handler

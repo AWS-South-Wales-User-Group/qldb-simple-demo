@@ -1,5 +1,4 @@
-const { PooledQldbDriver, QldbDriver, QldbSession } = require('amazon-qldb-driver-nodejs');
-const { ClientConfiguration }  = require('aws-sdk/clients/qldbsession')
+const { PooledQldbDriver } = require('amazon-qldb-driver-nodejs');
 
 const pooledQldbDriver = createQldbDriver();
 
@@ -7,7 +6,7 @@ const pooledQldbDriver = createQldbDriver();
  * Create a pooled driver for creating sessions.
  * @param ledgerName The name of the ledger to create the driver on.
  * @param serviceConfigurationOptions The configurations for the AWS SDK client that the driver uses.
- * @returns The pooled driver for creating sessions.
+ * @returns PooledQldbDriver pooled driver for creating sessions.
  */
 function createQldbDriver(
   ledgerName = process.env.LEDGER_NAME,
@@ -34,6 +33,5 @@ function closeQldbSession(session) {
 
 module.exports = {
   createQldbSession,
-  closeQldbSession,
-  createQldbDriver
+  closeQldbSession
 }

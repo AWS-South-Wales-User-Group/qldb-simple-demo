@@ -1,7 +1,6 @@
 'use strict';
 
 const response = require('cfn-response-promise');
-const { QldbSession, Result, TransactionExecutor } = require('amazon-qldb-driver-nodejs')
 const { closeQldbSession, createQldbSession } = require('./helper/ConnectToLedger');
 
 module.exports.handler = async (event,context) => {

@@ -15,7 +15,7 @@ service: qldb-simple-demo
 
 provider:
   name: aws
-  runtime: nodejs10.x
+  runtime: nodejs12.x
   memorySize: 512
   stage: ${opt:stage, 'dev'}
   region: eu-west-1

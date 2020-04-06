@@ -1,9 +1,9 @@
 const { getVehicle } = require('./helper/vehicle');
-const { error, log } = require("./helper/LogUtil");
+const Log = require('@dazn/lambda-powertools-logger');
 
 module.exports.handler = async (event) => {
   const { vehicleId } = event.pathParameters;
-  log('In getVehicle handler with ID: ' + vehicleId);
+  Log.debug('In getVehicle handler with ID: ' + vehicleId);
 
   const vehicle = await getVehicle(vehicleId);
 

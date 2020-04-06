@@ -1,9 +1,9 @@
 const { createVehicle } = require('./helper/vehicle');
-const { log } = require("./helper/LogUtil");
+const Log = require('@dazn/lambda-powertools-logger');
 
 module.exports.handler = async (event) => {
     const { vrn, make, model, colour } = JSON.parse(event.body);
-    log(`In the create vehicle handler with VRN: ${vrn} Make: ${make} Model: ${model} Colour: ${colour}`);
+    Log.debug(`In the create vehicle handler with VRN: ${vrn} Make: ${make} Model: ${model} Colour: ${colour}`);
 
     const response = await createVehicle(vrn, make, model, colour);
 

@@ -1,5 +1,7 @@
 const { QldbSession, Result, TransactionExecutor } = require('amazon-qldb-driver-nodejs');
 const { closeQldbSession, createQldbSession } = require('./ConnectToLedger');
+const VehicleNotFoundError = require('../lib/VehicleNotFoundError'); 
+const VehicleIntegrityError = require('../lib/VehicleIntegrityError'); 
 const { dom } = require("ion-js");
 const Log = require('@dazn/lambda-powertools-logger');
 
@@ -18,16 +20,13 @@ const getVehicle = async (vrn) => {
 
             if (resultList.length === 0) {
                 responseMessage = `No vehicle found: ${vrn}.`;
-                throw new Error(`No vehicle found: ${vrn}.`);
+                throw new VehicleNotFoundError(404, 'Vehicle Not Found', `No vehicle found: ${vrn}.`);
             } else if (resultList.length > 1) {
-                responseMessage = `More than one vehicle found: ${vrn}.`;
-                throw new Error(`More than one vehicle found: ${vrn}.`);
+                throw new VehicleIntegrityError(400, 'Vehicle Integrity Error', `More than one vehicle found: ${vrn}.`);
             } else {
                 responseMessage = JSON.stringify(resultList[0]);
             }
         }, () => Log.info("Retrying due to OCC conflict..."));
-    } catch (e) {
-        Log.error(`Error displaying documents: ${e}`);
     } finally {
         closeQldbSession(session);
     }
@@ -43,7 +42,7 @@ async function getVehicleByVRN(txn, vrn) {
 
 
 const createVehicle = async (vrn, make, model, colour ) => {
-    Log.debug("In createVehicle function");
+    Log.debug(`In the create vehicle handler with VRN: ${vrn} Make: ${make} Model: ${model} Colour: ${colour}`);
 
     const VEHICLE = [{"VRN": vrn, "Make": make, "Model": model, "Colour": colour }];
 
@@ -59,11 +58,9 @@ const createVehicle = async (vrn, make, model, colour ) => {
                 result = await insertNewVehicleRecord(txn, VEHICLE);
                 responseMessage = `New vehicle record with VRN ${vrn} created`;
             } else {
-                responseMessage = `Vehicle record with VRN ${vrn} already exists. No new record created`;
+                throw new VehicleIntegrityError(400, 'Vehicle Integrity Error', `Vehicle record with VRN ${vrn} already exists. No new record created`);
             }
         }, () => Log.info("Retrying due to OCC conflict..."));
-    } catch (e) {
-        Log.error(`Unable to insert documents: ${e}`);
     } finally {
         closeQldbSession(session);
     }

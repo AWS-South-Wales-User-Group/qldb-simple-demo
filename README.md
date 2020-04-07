@@ -12,15 +12,16 @@ To run the application use the following command:
 
 and this will create the CloudFormation stack and deploy all resources
 
+## Updates
 
-## Future Enhancements
+Apr-06-2020
+Significant updates to migrate to the new Amazon QLDB Driver for Nodejs. Overall updates include:
 
-The latest version is missing a number of important features that will be added moving forward. These include:
+* Update to Amazon QLDB Nodejs Driver v1.0.0-rc
+    * Update aws-sdk
+    * Update ion-js
+    * Install jsbi
+* Install DAZN Lambda Powertools Logger to adopt structured log format
+* Return JSON success and error responses for Create and Get Vehicle APIs
 
-* [ ] - Request schema validation in API Gateway
-* [ ] - Response schema validation
-* [ ] - Mapping templates to return correct HTTP Status Codes
-* [ ] - Use of middleware engine like 'middy'
-* [ ] - Use of webpack to reduce the package size
-* [ ] - Add more documentation
 

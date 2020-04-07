@@ -21,6 +21,7 @@ Significant updates to migrate to the new Amazon QLDB Driver for Nodejs. Overall
     * Update aws-sdk
     * Update ion-js
     * Install jsbi
+* Update to nodejs12.x
 * Install DAZN Lambda Powertools Logger to adopt structured log format
 * Return JSON success and error responses for Create and Get Vehicle APIs
 

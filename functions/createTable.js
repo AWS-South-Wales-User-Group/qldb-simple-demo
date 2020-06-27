@@ -1,4 +1,4 @@
-const { closeQldbSession, createQldbSession } = require('./helper/ConnectToLedger');
+const { getQldbDriver } = require('./helper/ConnectToLedger');
 const Log = require('@dazn/lambda-powertools-logger');
 const response = require('cfn-response-promise');
 
@@ -8,10 +8,9 @@ module.exports.handler = async (event,context) => {
 
   try {
     if (event.RequestType === 'Create') {
-      let session;
       try {
-          session = await createQldbSession();
-          await session.executeLambda(async (txn) => {
+          const qldbDriver = await getQldbDriver();
+          await qldbDriver.executeLambda(async (txn) => {
             Promise.all([
                 createTable(txn, process.env.TABLE_NAME)
             ]);
@@ -19,8 +18,6 @@ module.exports.handler = async (event,context) => {
       } catch (e) {
           Log.error(`Unable to connect: ${e}`);
           throw e;
-      } finally {
-          closeQldbSession(session);
       } 
       const responseData = {'requestType': event.RequestType};
       await response.send(event, context, response.SUCCESS, responseData);

@@ -17,12 +17,12 @@
   },
   "homepage": "https://github.com/mlewis7127/qldb-simple-demo#readme",
   "dependencies": {
-    "@dazn/lambda-powertools-logger": "^1.21.0",
-    "amazon-qldb-driver-nodejs": "^1.0.0-rc.1",
-    "aws-sdk": "^2.653.0",
+    "@dazn/lambda-powertools-logger": "^1.24.1",
+    "amazon-qldb-driver-nodejs": "^1.0.0",
+    "aws-sdk": "^2.706.0",
     "cfn-response-promise": "^1.0.1",
-    "ion-js": "^4.0.0",
-    "jsbi": "^3.1.2"
+    "ion-js": "^4.0.1",
+    "jsbi": "^3.1.3"
   },
   "devDependencies": {
     "serverless-iam-roles-per-function": "^2.0.2",

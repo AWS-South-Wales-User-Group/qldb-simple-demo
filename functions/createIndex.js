@@ -32,7 +32,7 @@ module.exports.handler = async (event,context) => {
 async function createIndex(txn, tableName, indexAttribute){
   const statement = `CREATE INDEX on ${tableName} (${indexAttribute})`;
   return await txn.execute(statement).then((result) => {
-      Log.debug(`Successfully created table ${tableName}.`);
+      Log.debug(`Successfully created index ${indexAttribute} on table ${tableName}.`);
       return result.getResultList().length;
   });
 }

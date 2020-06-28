@@ -11,9 +11,7 @@ module.exports.handler = async (event,context) => {
       try {
           const qldbDriver = await getQldbDriver();
           await qldbDriver.executeLambda(async (txn) => {
-            Promise.all([
-                createTable(txn, process.env.TABLE_NAME)
-            ]);
+            await createTable(txn, process.env.TABLE_NAME);
         }, () => Log.info("Retrying due to OCC conflict..."));
       } catch (e) {
           Log.error(`Unable to connect: ${e}`);
@@ -36,6 +34,6 @@ async function createTable(txn, tableName){
   const statement = `CREATE TABLE ${tableName}`;
   return await txn.execute(statement).then((result) => {
       Log.debug(`Successfully created table ${tableName}.`);
-      return result.getResultList().length;
+      return result;
   }); 
 }

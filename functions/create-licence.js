@@ -1,14 +1,15 @@
-const { createVehicle } = require('./helper/vehicle');
+const { createLicence } = require('./helper/vehicle');
 const Log = require('@dazn/lambda-powertools-logger');
 const VehicleIntegrityError = require('./lib/VehicleIntegrityError'); 
+const LicenceIntegrityError = require('./lib/LicenceIntegrityError');
 
 
 module.exports.handler = async (event) => {
-    const { VRN, Make, Model, Colour } = JSON.parse(event.body);
-    Log.debug(`In the create vehicle handler with VRN: ${VRN} Make: ${Make} Model: ${Model} Colour: ${Colour}`);
+    const { Name, Email, Telephone } = JSON.parse(event.body);
+    Log.debug(`In the create licence handler with name ${Name} email ${Email} and telephone ${Telephone}`);
 
     try {
-        const response = await createVehicle(VRN, Make, Model, Colour);
+        const response = await createLicence(Name, Email, Telephone);
         const responseBody = {
               status: 201,
               detail: response
@@ -18,7 +19,7 @@ module.exports.handler = async (event) => {
             body: JSON.stringify(responseBody)
         };    
     } catch (error) {
-        if (error instanceof VehicleIntegrityError) {
+        if (error instanceof LicenceIntegrityError) {
             return error.getHttpResponse();
         } else {
             Log.error('Error returned: ' + error);

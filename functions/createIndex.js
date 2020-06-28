@@ -12,7 +12,9 @@ module.exports.handler = async (event,context) => {
           const qldbDriver = await getQldbDriver();
           await qldbDriver.executeLambda(async (txn) => {
             Promise.all([
-              createIndex(txn, process.env.TABLE_NAME, process.env.INDEX_NAME)
+              createIndex(txn, process.env.TABLE_NAME, process.env.INDEX_NAME_1),
+              createIndex(txn, process.env.TABLE_NAME, process.env.INDEX_NAME_2),
+              createIndex(txn, process.env.TABLE_NAME, process.env.INDEX_NAME_3),
             ]);
         }, () => Log.info("Retrying due to OCC conflict..."));
       } catch (e) {
@@ -33,6 +35,6 @@ async function createIndex(txn, tableName, indexAttribute){
   const statement = `CREATE INDEX on ${tableName} (${indexAttribute})`;
   return await txn.execute(statement).then((result) => {
       Log.debug(`Successfully created index ${indexAttribute} on table ${tableName}.`);
-      return result.getResultList().length;
+      return result;
   });
 }

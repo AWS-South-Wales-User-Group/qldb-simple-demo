@@ -25,12 +25,12 @@ plugins:
   - serverless-pseudo-parameters
 
 functions:
-  createVehicle:
-    name: create-vehicle-${self:provider.stage}
-    handler: functions/create-vehicle.handler
+  createLicence:
+    name: create-licence-${self:provider.stage}
+    handler: functions/create-licence.handler
     events:
       - http:
-          path: /vehicle
+          path: /licences
           method: post
     iamRoleStatements:
       - Effect: Allow
@@ -40,13 +40,42 @@ functions:
     environment:
       LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
 
-
-  get-vehicle:
-    name: get-vehicle-${self:provider.stage}
-    handler: functions/get-vehicle.handler
+  updateLicence:
+    name: update-licence-${self:provider.stage}
+    handler: functions/update-licence.handler
     events:
       - http:
-          path: /vehicle/{vehicleId}
+          path: /licences
+          method: put
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:SendCommand
+        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
+    environment:
+      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
+ 
+  deleteLicence:
+    name: delete-licence-${self:provider.stage}
+    handler: functions/delete-licence.handler
+    events:
+      - http:
+          path: /licences
+          method: delete
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:SendCommand
+        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
+    environment:
+      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
+    
+  getLicence:
+    name: get-licence-${self:provider.stage}
+    handler: functions/get-licence.handler
+    events:
+      - http:
+          path: /licences/{licenceid}
           method: get
     iamRoleStatements:
       - Effect: Allow
@@ -69,7 +98,7 @@ functions:
         Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
     environment:
       LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
-      TABLE_NAME: Vehicle
+      TABLE_NAME: BicycleLicence
 
   createIndex:
     name: qldb-demo-index-${self:provider.stage}
@@ -83,8 +112,11 @@ functions:
         Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
     environment:
       LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
-      TABLE_NAME: Vehicle
-      INDEX_NAME: VRN
+      TABLE_NAME: BicycleLicence
+      INDEX_NAME_1: GUID
+      INDEX_NAME_2: Email
+      INDEX_NAME_3: Telephone
+
 
 resources:
   Resources:

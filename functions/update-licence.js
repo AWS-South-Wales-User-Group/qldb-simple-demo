@@ -11,14 +11,10 @@ module.exports.handler = async (event) => {
 
     try {
         const response = await updateLicence(LicenceId, Event);
-        const responseBody = {
-              status: 201,
-              detail: response
-        };
         return {
             statusCode: 201,
-            body: JSON.stringify(responseBody)
-        };    
+            body: JSON.stringify(response)
+        };
     } catch (error) {
         if (error instanceof LicenceIntegrityError) {
             return error.getHttpResponse();

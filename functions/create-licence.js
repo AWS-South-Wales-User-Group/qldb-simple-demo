@@ -11,13 +11,9 @@ module.exports.handler = async (event) => {
     try {
         const Event = [{"eventName": "LicenceHolderCreated", "eventDate": dateFormat(new Date(), "isoDateTime")}];
         const response = await createLicence(Name, Email, Telephone, Event);
-        const responseBody = {
-              status: 201,
-              detail: response
-        };
         return {
             statusCode: 201,
-            body: JSON.stringify(responseBody)
+            body: JSON.stringify(response)
         };    
     } catch (error) {
         if (error instanceof LicenceIntegrityError) {

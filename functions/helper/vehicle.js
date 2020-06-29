@@ -8,7 +8,7 @@ const Log = require('@dazn/lambda-powertools-logger');
 
 
 
-const createLicence = async (name, email, telephone) => {
+const createLicence = async (name, email, telephone, event) => {
     Log.debug(`In createLicence function with name: ${name} email ${email} and telephone ${telephone}`);
 
     let licence;
@@ -18,8 +18,9 @@ const createLicence = async (name, email, telephone) => {
         // Check if the record already exists assuming email unique for demo
         const recordsReturned = await checkEmailUnique(txn, email);
         if (recordsReturned === 0) {
+            // Strip out whitespace in name and add random 4 digit number at end for LicenceID
             const licenceId = name.replace(/\s/g, '') + Math.floor(1000 + Math.random() * 9000);
-            const licenceDoc = [{"LicenceId": licenceId, "Name": name, "Email": email, "Telephone": telephone  }]
+            const licenceDoc = [{"LicenceId": licenceId, "Name": name, "Email": email, "Telephone": telephone, "Events": event  }]
             // Create the record. This returns the unique document ID in an array as the result set
             const result = await createBicycleLicence(txn, licenceDoc);
             const docIdArray = result.getResultList()
@@ -65,6 +66,53 @@ async function addGuid(txn, docId, name) {
     const statement = `UPDATE BicycleLicence as b SET b.GUID = ? WHERE b.Name = ?`;
     return await txn.execute(statement, docId, name);
 }
+
+
+// Function to add or remove penalty points on a licence
+const updateLicence = async (id, event) => {
+    Log.debug(`In updateLicence function with LicenceId ${id} and event ${event}`);
+
+    let licence;
+    // Get a QLDB Driver instance
+    const qldbDriver = await getQldbDriver();
+    await qldbDriver.executeLambda(async (txn) => {
+        // Get the current record
+
+        const response = await getLicenceRecord(txn, id);
+        const returnedRecord = response.getResultList();
+
+        if (returnedRecord.length === 0) {
+            throw new LicenceIntegrityError(400, 'Licence Integrity Error', `Licence record with id ${id} does not exist`);
+        } else {
+            const originalLicence = JSON.stringify(returnedRecord[0]);
+            const LICENCE = JSON.parse(originalLicence);
+            const events  = LICENCE.Events;
+            events.unshift(event);
+            const updateResult = await addEvent(txn, events, id);
+            console.log("udpateResult: " + JSON.stringify(updateResult));
+            licence = JSON.stringify(updateResult[0])
+        }
+    }, () => Log.info("Retrying due to OCC conflict..."));
+    return licence;
+};
+
+async function getLicenceRecord(txn, id) {
+    Log.debug("In getLicenceRecord function");
+    const query = `SELECT * FROM BicycleLicence AS b WHERE b.LicenceId = ?`;
+    return txn.execute(query, id);
+}
+
+
+// helper function to add the unique ID as the GUID
+async function addEvent(txn, event, id) {
+  Log.debug("In the addEvent function");
+  const statement = `UPDATE BicycleLicence as b SET b.Events = ? WHERE b.LicenceId = ?`;
+  return await txn.execute(statement, event, id);
+}
+
+
+
+
 
 
 
@@ -147,5 +195,6 @@ async function insertNewVehicleRecord(txn, documents) {
 module.exports = {
     getVehicle,
     createVehicle,
-    createLicence
+    createLicence,
+    updateLicence
 }

@@ -1,7 +1,7 @@
 const { createLicence } = require('./helper/vehicle');
 const Log = require('@dazn/lambda-powertools-logger');
-const VehicleIntegrityError = require('./lib/VehicleIntegrityError'); 
 const LicenceIntegrityError = require('./lib/LicenceIntegrityError');
+const dateFormat = require('dateformat');
 
 
 module.exports.handler = async (event) => {
@@ -9,7 +9,8 @@ module.exports.handler = async (event) => {
     Log.debug(`In the create licence handler with name ${Name} email ${Email} and telephone ${Telephone}`);
 
     try {
-        const response = await createLicence(Name, Email, Telephone);
+        const Event = [{"eventName": "LicenceHolderCreated", "eventDate": dateFormat(new Date(), "isoDateTime")}];
+        const response = await createLicence(Name, Email, Telephone, Event);
         const responseBody = {
               status: 201,
               detail: response

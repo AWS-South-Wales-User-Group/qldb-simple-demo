@@ -54,7 +54,23 @@ functions:
         Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
     environment:
       LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
- 
+
+  updateContact:
+    name: update-contact-${self:provider.stage}
+    handler: functions/update-contact.handler
+    events:
+      - http:
+          path: /licences/contact
+          method: put
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:SendCommand
+        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
+    environment:
+      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
+    
+
   deleteLicence:
     name: delete-licence-${self:provider.stage}
     handler: functions/delete-licence.handler

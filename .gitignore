@@ -33,3 +33,5 @@ node_modules/
 
 # Serverless directories
 .serverless/
+
+.DS_Store

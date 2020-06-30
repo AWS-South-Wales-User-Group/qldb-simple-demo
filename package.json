@@ -21,6 +21,7 @@
     "amazon-qldb-driver-nodejs": "^1.0.0",
     "aws-sdk": "^2.706.0",
     "cfn-response-promise": "^1.0.1",
+    "dateformat": "^3.0.3",
     "ion-js": "^4.0.1",
     "jsbi": "^3.1.3"
   },

@@ -14,10 +14,61 @@ and this will create the CloudFormation stack and deploy all resources
 
 ## Updates
 
-Jun-27-2020
+**Jul-01-2020**
+Fundamental rewrite to a Bicycle Licence application that handles a number of events:
+* Create Licence
+* Update Licence
+* Update Contact
+* Get Contact
+
+### Create Licence
+Create Licence is an HTTP POST using the following JSON
+
+```
+{
+	"Name" : "name",
+	"Email": "qldb@qldb.com",
+	"Telephone" : "01345456",
+	"Postcode": "AB12ABC"
+}
+```
+
+### Update Licence
+Update Licence is an HTTP PUT using the following JSON format
+
+```
+{
+	"Email" : "qldb@qldb.com",
+	"Event": {
+		"eventName": "PenaltyPointsAdded",
+		"eventDescription": "Speeding in a 30 Zone",
+		"penaltyPoints": 3
+	}
+}
+```
+
+### Update Contact
+Update Contact is an HTTP PUT using the following JSON format. It allows you to update either the Telephone and/or the Postcode of the contact
+
+```
+{
+	"Email" : "qldb@qldb.com",
+	"Telephone": "01367893",
+	"Event": {
+		"eventName": "ContactDetailsChanged",
+		"eventDescription": "Telephone number updated"
+	}
+}
+```
+
+### Get Licence
+Get Licence is an HTTP GET using the licence ID
+
+
+**Jun-27-2020**
 Updated to use Amazon QLDB Nodejs Driver v1.0.0. Most significant update is the switch from `PooledQldbDriver` to the standard `QldbDriver` which now includes the pooling functionality. The `executeLambda` method is now made available on the driver instance, so all code to create `QldbSession` instance and close the session is removed.
 
-Apr-06-2020
+**Apr-06-2020**
 Significant updates to migrate to the new Amazon QLDB Driver for Nodejs. Overall updates include:
 
 * Update to Amazon QLDB Nodejs Driver v1.0.0-rc

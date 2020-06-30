@@ -1,4 +1,4 @@
-class VehicleNotFoundError extends Error {
+class LicenceNotFoundError extends Error {
     constructor(status, message, description) {
       super(message);
       this.status = status;
@@ -19,4 +19,4 @@ class VehicleNotFoundError extends Error {
     }
   }
   
-  module.exports = VehicleNotFoundError;
+  module.exports = LicenceNotFoundError;

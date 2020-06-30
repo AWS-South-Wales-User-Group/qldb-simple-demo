@@ -1,19 +1,19 @@
-const { updateLicence } = require('./helper/vehicle');
+const { updateLicence } = require('./helper/licence');
 const Log = require('@dazn/lambda-powertools-logger');
 const LicenceIntegrityError = require('./lib/LicenceIntegrityError'); 
 const dateFormat = require('dateformat');
 
 
 module.exports.handler = async (event) => {
-    const { LicenceId, Event } = JSON.parse(event.body);
-    Log.debug(`In the update licence handler with LicenceId ${LicenceId} and event ${Event}`);
+    const { Email, Event } = JSON.parse(event.body);
+    Log.debug(`In the update licence handler with Email ${Email} and event ${Event}`);
     Event.eventDate = dateFormat(new Date(), "isoDateTime");
 
     try {
-        const response = await updateLicence(LicenceId, Event);
+        await updateLicence(Email, Event);
         return {
             statusCode: 201,
-            body: JSON.stringify(response)
+            body: JSON.stringify('Licence details updated')
         };
     } catch (error) {
         if (error instanceof LicenceIntegrityError) {

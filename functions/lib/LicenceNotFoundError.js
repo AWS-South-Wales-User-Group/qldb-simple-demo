@@ -1,4 +1,4 @@
-class VehicleIntegrityError extends Error {
+class LicenceNotFoundError extends Error {
     constructor(status, message, description) {
       super(message);
       this.status = status;
@@ -19,4 +19,4 @@ class VehicleIntegrityError extends Error {
     }
   }
   
-  module.exports = VehicleIntegrityError;
+  module.exports = LicenceNotFoundError;

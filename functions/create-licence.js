@@ -1,4 +1,4 @@
-const { createLicence } = require('./helper/vehicle');
+const { createLicence } = require('./helper/licence');
 const Log = require('@dazn/lambda-powertools-logger');
 const LicenceIntegrityError = require('./lib/LicenceIntegrityError');
 const dateFormat = require('dateformat');

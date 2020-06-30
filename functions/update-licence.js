@@ -10,10 +10,12 @@ module.exports.handler = async (event) => {
     Event.eventDate = dateFormat(new Date(), "isoDateTime");
 
     try {
-        await updateLicence(Email, Event);
+        const response = await updateLicence(Email, Event);
+        const message = JSON.parse(response);
+
         return {
             statusCode: 201,
-            body: JSON.stringify('Licence details updated')
+            body: JSON.stringify(message)
         };
     } catch (error) {
         if (error instanceof LicenceIntegrityError) {

@@ -5,12 +5,12 @@ const dateFormat = require('dateformat');
 
 
 module.exports.handler = async (event) => {
-    const { Name, Email, Telephone } = JSON.parse(event.body);
-    Log.debug(`In the create licence handler with name ${Name} email ${Email} and telephone ${Telephone}`);
+    const { Name, Email, Telephone, Postcode } = JSON.parse(event.body);
+    Log.debug(`In the create licence handler with name ${Name} email ${Email} telephone ${Telephone} and postcode ${Postcode}`);
 
     try {
         const Event = [{"eventName": "LicenceHolderCreated", "eventDate": dateFormat(new Date(), "isoDateTime")}];
-        const response = await createLicence(Name, Email, Telephone, Event);
+        const response = await createLicence(Name, Email, Telephone, Postcode, Event);
         return {
             statusCode: 201,
             body: JSON.stringify(response)

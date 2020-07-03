@@ -4,7 +4,8 @@ const https = require('https');
 const DynamoDB = require('aws-sdk/clients/dynamodb');
 
 const AWSXRay  = require('aws-xray-sdk');
-const AWS      = AWSXRay.captureAWS(require('aws-sdk'));
+const AWS      = require('aws-sdk');
+
 
 // see https://theburningmonk.com/2019/02/lambda-optimization-tip-enable-http-keep-alive/
 const sslAgent = new https.Agent({

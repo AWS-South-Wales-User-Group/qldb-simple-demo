@@ -6,23 +6,6 @@ const DynamoDB = require('aws-sdk/clients/dynamodb');
 const AWSXRay  = require('aws-xray-sdk');
 const AWS      = require('aws-sdk');
 
-
-// see https://theburningmonk.com/2019/02/lambda-optimization-tip-enable-http-keep-alive/
-const sslAgent = new https.Agent({
-  keepAlive: true,
-  maxSockets: 50,
-  rejectUnauthorized: true,
-});
-sslAgent.setMaxListeners(0);
-
-const dynamodb = new AWS.DynamoDB.DocumentClient({
-  service: new DynamoDB({
-    httpOptions: {
-      agent: sslAgent
-    },
-  }),
-});
-
 const { TABLE_NAME } = process.env;
 
 

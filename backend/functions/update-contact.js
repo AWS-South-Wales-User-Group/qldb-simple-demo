@@ -10,11 +10,9 @@ module.exports.handler = async (event) => {
 
     try {
         const response = await updateContact(Telephone, Postcode, Email, Event);
-        const message = JSON.parse(response);
-
         return {
             statusCode: 201,
-            body: JSON.stringify(message)
+            body: JSON.stringify(response)
         };
     } catch (error) {
         if (error instanceof LicenceIntegrityError) {

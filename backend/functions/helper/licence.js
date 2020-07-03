@@ -15,19 +15,18 @@ const createLicence = async (name, email, telephone, postcode, event) => {
         // Check if the record already exists assuming email unique for demo
         const recordsReturned = await checkEmailUnique(txn, email);
         if (recordsReturned === 0) {
-            // Strip out whitespace in name and add random 4 digit number at end for LicenceID
-            const licenceId = (name.replace(/\s/g, '') + Math.floor(1000 + Math.random() * 9000)).toUpperCase();
-            const licenceDoc = [{"LicenceId": licenceId, "Name": name, "Email": email, "Telephone": telephone, "Postcode": postcode, "Events": event  }]
+            const licenceDoc = [{"Name": name, "Email": email, "Telephone": telephone, "Postcode": postcode, "PenaltyPoints": 0, "Events": event  }]
             // Create the record. This returns the unique document ID in an array as the result set
             const result = await createBicycleLicence(txn, licenceDoc);
             const docIdArray = result.getResultList()
             const docId = docIdArray[0].get("documentId").stringValue();
             // Update the record to add the document ID as the GUID in the payload
-            await addGuid(txn, docId, name);
+            await addGuid(txn, docId, docId.toUpperCase(), name);
             licence = {
                 "GUID": docId,
-                "LicenceId": licenceId,
+                "LicenceId": docId.toUpperCase(),
                 "Name": name,
+                "PenaltyPoints": 0,
                 "Email": email,
                 "Telephone": telephone,
                 "Postcode": postcode
@@ -59,10 +58,10 @@ async function createBicycleLicence(txn, licenceDoc) {
 };
 
 // helper function to add the unique ID as the GUID
-async function addGuid(txn, docId, name) {
+async function addGuid(txn, id, licenceId, name) {
     Log.debug("In the addGuid function");
-    const statement = `UPDATE BicycleLicence as b SET b.GUID = ? WHERE b.Name = ?`;
-    return await txn.execute(statement, docId, name);
+    const statement = `UPDATE BicycleLicence as b SET b.GUID = ?, b.LicenceId = ? WHERE b.Name = ?`;
+    return await txn.execute(statement, id, licenceId, name);
 };
 
 
@@ -84,10 +83,22 @@ const updateLicence = async (email, event) => {
         } else {
             const originalLicence = JSON.stringify(resultList[0]);
             const newLicence = JSON.parse(originalLicence);
+            const originalPoints = newLicence.PenaltyPoints;
+            const updatedPoints = event.penaltyPoints;
+            let newPoints = null;
+            if (event.eventName == "PenaltyPointsAdded") {
+                newPoints = originalPoints + updatedPoints;
+            } else {
+                newPoints = originalPoints - updatedPoints;
+            }
+
             const events  = newLicence.Events;
             events.unshift(event);
-            const updateResult = await addEvent(txn, events, email);
-            licence = `{"Response": "Licence details updated"}`;
+            const updateResult = await addEvent(txn, newPoints, events, email);
+            licence = {
+                "Email": email,
+                "UpdatedPenaltyPoints": newPoints,
+            };
         }
     }, () => Log.info("Retrying due to OCC conflict..."));
     return licence;
@@ -116,7 +127,10 @@ const updateContact = async (telephone, postcode, email, event) => {
             telephone === undefined ? telephone = newLicence.Telephone : null;
             postcode === undefined ? postcode = newLicence.Postcode : null;
             const updateResult = await addContactUpdatedEvent(txn, telephone, postcode, events, email);
-            licence = `{"Response": "Contact details updated"}`;
+            licence = {
+                "Email": email,
+                "Response": "Contact details updated"
+            };
         }
     }, () => Log.info("Retrying due to OCC conflict..."));
     return licence;
@@ -134,18 +148,25 @@ async function getLicenceRecordById(txn, id) {
     return txn.execute(query, id);
 };
 
-// helper function to add the unique ID as the GUID
-async function addEvent(txn, event, email) {
+// helper function to update the penalty points and events
+async function addEvent(txn, points, event, email) {
   Log.debug("In the addEvent function");
-  const statement = `UPDATE BicycleLicence as b SET b.Events = ? WHERE b.Email = ?`;
-  return await txn.execute(statement, event, email);
+  const statement = `UPDATE BicycleLicence as b SET b.PenaltyPoints = ?, b.Events = ? WHERE b.Email = ?`;
+  return await txn.execute(statement, points, event, email);
 };
 
-// helper function to add the unique ID as the GUID
+// helper function to add ta contact updated event
 async function addContactUpdatedEvent(txn, telephone, postcode, event, email) {
     Log.debug(`In the addContactUpdatedEvent function with telephone ${telephone} and postcode ${postcode}`);
     const statement = `UPDATE BicycleLicence as b SET b.Telephone = ?, b.Postcode = ?, b.Events = ? WHERE b.Email = ?`;
     return await txn.execute(statement, telephone, postcode, event, email);
+};
+
+// helper function to delete a record by LicenceId
+async function deleteLicenceRecordById(txn, id) {
+    Log.debug("In deleteLicenceRecordById function");
+    const query = `DELETE FROM BicycleLicence AS b WHERE b.LicenceId = ?`;
+    return txn.execute(query, id);
 };
 
 
@@ -170,9 +191,34 @@ const getLicence = async (id) => {
     return licence;
 };
 
+
+// Function to retrieve the current state of a licence
+const deleteLicence = async (id) => {
+    Log.debug(`In deleteLicence function with LicenceId ${id}`);
+
+    let licence;
+    // Get a QLDB Driver instance
+    const qldbDriver = await getQldbDriver();
+    await qldbDriver.executeLambda(async (txn) => {
+        // Get the current record
+        const result = await getLicenceRecordById(txn, id);
+        const resultList = result.getResultList();
+
+        if (resultList.length === 0) {
+            throw new LicenceNotFoundError(400, 'Licence Not Found Error', `Licence record with LicenceId ${id} does not exist`);
+        } else {
+            const updateResult = await deleteLicenceRecordById(txn, id);
+            licence = `{"Response": "Licence record deleted"}`;
+        }
+    }, () => Log.info("Retrying due to OCC conflict..."));
+    return licence;
+};
+
+
 module.exports = {
     createLicence,
     updateLicence,
     getLicence,
-    updateContact
+    updateContact,
+    deleteLicence
 }

@@ -77,7 +77,7 @@ module.exports.handler = async (event, context) => {
 
     // retrieve the version and id from the metadata section of the message
     const version = ion.dumpText(ionRecord.payload.revision.metadata.version);
-    const id = ion.dumpText(ionRecord.payload.revision.metadata.id);
+    const id = ion.dumpText(ionRecord.payload.revision.metadata.id).replace(/['"]+/g, '');
     const revision = ion.dumpText(ionRecord.payload.revision);
 
     console.log(`Version ${version} and id ${id}`);

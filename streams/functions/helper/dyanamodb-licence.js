@@ -37,14 +37,11 @@ const createLicence = async (id, points, postcode) => {
     };
 
     console.log(`About to call dynamodb.put`);
-    await dynamodb.put(params, (err) => {
-        if (err) {
-            console.error('Unable to delete licence', id, '. Error JSON:', JSON.stringify(err, null, 2));
-          } else {
-            console.log('DeleteItem succeeded:', id);
-          }  
-    }).promise();
-    console.log(`Returned from call dynamodb.put`);
+
+    await dynamodb.put(params)
+        .promise()
+        .then(() => console.log('PutItem succeeded'))
+        .catch(err => console.error('Unable to delete licence', id, '. Error JSON:', JSON.stringify(err, null, 2)))
 
 };
 

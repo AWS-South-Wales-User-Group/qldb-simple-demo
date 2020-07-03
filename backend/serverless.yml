@@ -19,6 +19,10 @@ provider:
   memorySize: 512
   stage: ${opt:stage, 'dev'}
   region: eu-west-1
+  environment:
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED	: "1"
+    LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
+
 
 plugins:
   - serverless-iam-roles-per-function
@@ -37,8 +41,6 @@ functions:
         Action: 
           - qldb:SendCommand
         Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
-    environment:
-      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
 
   updateLicence:
     name: update-licence-${self:provider.stage}
@@ -52,8 +54,6 @@ functions:
         Action: 
           - qldb:SendCommand
         Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
-    environment:
-      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
 
   updateContact:
     name: update-contact-${self:provider.stage}
@@ -66,10 +66,7 @@ functions:
       - Effect: Allow
         Action: 
           - qldb:SendCommand
-        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
-    environment:
-      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
-    
+        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}    
 
   deleteLicence:
     name: delete-licence-${self:provider.stage}
@@ -83,8 +80,6 @@ functions:
         Action: 
           - qldb:SendCommand
         Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
-    environment:
-      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
     
   getLicence:
     name: get-licence-${self:provider.stage}
@@ -98,9 +93,6 @@ functions:
         Action: 
           - qldb:SendCommand
         Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
-    environment:
-      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
-
 
   createTable:
     name: qldb-demo-table-${self:provider.stage}
@@ -113,7 +105,6 @@ functions:
           - qldb:SendCommand
         Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
     environment:
-      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
       TABLE_NAME: BicycleLicence
 
   createIndex:
@@ -127,7 +118,6 @@ functions:
           - qldb:SendCommand
         Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
     environment:
-      LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
       TABLE_NAME: BicycleLicence
       INDEX_NAME_1: GUID
       INDEX_NAME_2: Email

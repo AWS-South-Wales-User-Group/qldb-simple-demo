@@ -87,7 +87,9 @@ module.exports.handler = async (event, context) => {
     try {
       const revisionData = ion.dumpText(ionRecord.payload.revision.data);
       const points = ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints);
-      const postcode = ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints);
+      const postcode = ion.dumpText(ionRecord.payload.revision.data.Postcode).replace(/['"]+/g, '');
+
+      console.log(`points ${points} and postcode ${postcode}`);
 
       // if the first version then we need to do a create
       if (version == 0) {

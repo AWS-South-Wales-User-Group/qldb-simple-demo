@@ -41,7 +41,7 @@ const createLicence = async (id, points, postcode) => {
     await dynamodb.put(params)
         .promise()
         .then(() => console.log('PutItem succeeded'))
-        .catch(err => console.error('Unable to delete licence', id, '. Error JSON:', JSON.stringify(err, null, 2)))
+        .catch(err => console.error('Unable to create licence', id, '. Error JSON:', JSON.stringify(err, null, 2)))
 
 };
 
@@ -53,15 +53,12 @@ const deleteLicence = async (id) => {
     };
 
     console.log(`About to call dynamodb.delete`);
-    await dynamodb.delete(params, (err) => {
-        if (err) {
-            console.error('Unable to delete licence', id, '. Error JSON:', JSON.stringify(err, null, 2));
-          } else {
-            console.log('DeleteItem succeeded:', id);
-          }  
-    }).promise();
-    console.log(`Return from call dynamodb.delete`);
+    await dynamodb.delete(params)
+        .promise()
+        .then(() => console.log('DeleteItem succeeded'))
+        .catch(err => console.error('Unable to delete licence', id, '. Error JSON:', JSON.stringify(err, null, 2)))
 
+    console.log(`Return from call dynamodb.delete`);
     
 };
 
@@ -72,7 +69,7 @@ const getLicence = async (id) => {
     const licence = await dynamodb.get({
         TableName: TABLE_NAME,
         Key: { 'pk': id },
-      }).promise();
+      });
     console.log(`Return from call dynamodb.get`);
     return {
         'id': licence.Item.pk,
@@ -95,14 +92,12 @@ const updateLicence = async (id, points, postcode) => {
     };
 
     console.log(`About to call dynamodb.update`);
-    await dynamodb.update(params, (err) => {
-        if (err) {
-            console.error('Unable to update licence', id, '. Error JSON:', JSON.stringify(err, null, 2));
-        } else {
-            console.log('UpdateItem succeeded:', id);
-        }    
-    }).promise();
-    console.log(`Return from call dynamodb.update`);
+    await dynamodb.update(params)
+        .promise()
+        .then(() => console.log('UpdateItem succeeded'))
+        .catch(err => console.error('Unable to update licence', id, '. Error JSON:', JSON.stringify(err, null, 2)))
+
+        console.log(`Return from call dynamodb.update`);
 };
 
 module.exports = {

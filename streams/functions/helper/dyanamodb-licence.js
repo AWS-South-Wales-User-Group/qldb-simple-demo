@@ -37,7 +37,7 @@ const createLicence = async (id, points, postcode) => {
     };
 
     console.log(`About to call dynamodb.put`);
-    dynamodb.put(params, (err) => {
+    await dynamodb.put(params, (err) => {
         if (err) {
             console.error('Unable to delete licence', id, '. Error JSON:', JSON.stringify(err, null, 2));
           } else {

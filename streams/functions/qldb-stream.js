@@ -17,8 +17,9 @@ module.exports.handler = async (event, context) => {
   console.log("Processing KPL Aggregated Messages using kpl-deagg(async)");
   console.log("Processing " + event.Records.length + " Kinesis Input Records");
 
+  let realRecords = [];
+
   handleNoProcess(event, function() {
-    var realRecords = [];
 
         // process all records in parallel
         async.map(event.Records, function(record, asyncCallback) {
@@ -46,42 +47,6 @@ module.exports.handler = async (event, context) => {
                 } else {
                   console.log("ION Record: " + ion.dumpPrettyText(ionRecord.payload))
                   realRecords.push(ionRecord);
-
-                  // retrieve the version and id from the metadata section of the message
-                  const version = ion.dumpText(ionRecord.payload.revision.metadata.version);
-                  const id = ion.dumpText(ionRecord.payload.revision.metadata.id);
-                  const revision = ion.dumpText(ionRecord.payload.revision);
-
-                  console.log(`Version ${version} and id ${id}`);
-                  console.log(`*** revision Data ${revision.data}`);
-
-
-                  // Check to see if the data section exists. Wrapped in a try-catch block
-                  // as you cannot create an Ion value from `undefined` which errors
-                  try {
-                    const revisionData = ion.dumpText(ionRecord.payload.revision.data);
-
-                    const points = ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints);
-                    const postcode = ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints);
-
-                    // if the first version then we need to do a create
-                    if (version == 0) {
-                      (async() => {
-                        await createLicence(id, points, postcode);
-                      })();
-                    } else {
-                      // Else it is an update
-                      (async() => {
-                        await updateLicence(id, points, postcode);
-                      })();  
-                    } 
-
-                  } catch (err) {
-                    console.log("No data section so handle as a delete");
-                    (async() => {
-                      await deleteLicence(id);
-                    })();
-                  }
                 }
               }
             }, function(err) {
@@ -104,7 +69,42 @@ module.exports.handler = async (event, context) => {
                 finish(event, context, ok, "Success");
               }
       });
+
   });
+
+
+  await Promise.all(realRecords.map(async (ionRecord) => {
+
+    // retrieve the version and id from the metadata section of the message
+    const version = ion.dumpText(ionRecord.payload.revision.metadata.version);
+    const id = ion.dumpText(ionRecord.payload.revision.metadata.id);
+    const revision = ion.dumpText(ionRecord.payload.revision);
+
+    console.log(`Version ${version} and id ${id}`);
+
+    // Check to see if the data section exists. Wrapped in a try-catch block
+    // as you cannot create an Ion value from `undefined` which errors
+    try {
+      const revisionData = ion.dumpText(ionRecord.payload.revision.data);
+      const points = ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints);
+      const postcode = ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints);
+
+      // if the first version then we need to do a create
+      if (version == 0) {
+        await createLicence(id, points, postcode);
+      } else {
+        // Else it is an update
+        await updateLicence(id, points, postcode); 
+      }
+    } catch (err) {
+      console.log("No data section so handle as a delete");
+      (async() => {
+        await deleteLicence(id);
+      })();
+    }
+  }));
+
+
 };
 
 

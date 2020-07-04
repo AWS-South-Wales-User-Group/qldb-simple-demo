@@ -14,9 +14,8 @@ let ion = require("ion-js");
 
 
 module.exports.handler = async (event, context) => {
-  console.log(`** PRINT MSG: ` + JSON.stringify(event, null, 2));
-  console.log("Processing KPL Aggregated Messages using kpl-deagg(async)");
-  console.log("Processing " + event.Records.length + " Kinesis Input Records");
+  Log.debug(`** PRINT MSG: ${JSON.stringify(event, null, 2)}`);
+  Log.debug(`Processing  ${event.Records.length} Kinesis Input Records`);
 
   await Promise.all(
     event.Records.map(async (kinesisRecord) => {
@@ -24,7 +23,7 @@ module.exports.handler = async (event, context) => {
       await processRecords(records);
     })
   );
-  console.log("finish");
+  Log.debug(`Finished processing in qldb-stream handler`);
 }
 
 const promiseDeaggregate = (record) =>
@@ -50,18 +49,17 @@ async function processRecords(records) {
 
       // Only process records where the record type is REVISION_DETAILS
       if (JSON.parse(ion.dumpText(ionRecord.recordType)) !== REVISION_DETAILS) {
-        console.log(
-          `Skipping record of type ` + ion.dumpPrettyText(ionRecord.recordType)
-        );
+        Log.debug(
+          `Skipping record of type ${ion.dumpPrettyText(ionRecord.recordType)}`);
       } else {
-        console.log("ION Record: " + ion.dumpPrettyText(ionRecord.payload));
-        await processION(ionRecord);
+        Log.debug(`Ion Record: ${ion.dumpPrettyText(ionRecord.payload)}`);
+        await processIon(ionRecord);
       }
     })
   );
 }
 
-async function processION(ionRecord) {
+async function processIon(ionRecord) {
   // retrieve the version and id from the metadata section of the message
   const version = ion.dumpText(ionRecord.payload.revision.metadata.version);
   const id = ion
@@ -69,7 +67,7 @@ async function processION(ionRecord) {
     .replace(/['"]+/g, "");
   const revision = ion.dumpText(ionRecord.payload.revision);
 
-  console.log(`Version ${version} and id ${id}`);
+  Log.debug(`Version ${version} and id ${id}`);
 
   // Check to see if the data section exists. Wrapped in a try-catch block
   // as you cannot create an Ion value from `undefined` which errors
@@ -80,7 +78,7 @@ async function processION(ionRecord) {
       .dumpText(ionRecord.payload.revision.data.Postcode)
       .replace(/['"]+/g, "");
 
-    console.log(`id: ${id}, points: ${points}, postcode: ${postcode}`);
+    Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}`);
     // if the first version then we need to do a create
     if (version == 0) {
       await createLicence(id, points, postcode);
@@ -89,7 +87,7 @@ async function processION(ionRecord) {
       await updateLicence(id, points, postcode);
     }
   } catch (err) {
-    console.log("No data section so handle as a delete");
+    Log.debug(`No data section so handle as a delete`);
     await deleteLicence(id);
   }
 }

@@ -1,16 +1,13 @@
-const https = require('https');
+const Log = require('@dazn/lambda-powertools-logger');
 
 // see https://theburningmonk.com/2019/03/just-how-expensive-is-the-full-aws-sdk/
 const DynamoDB = require('aws-sdk/clients/dynamodb');
-
-const AWSXRay  = require('aws-xray-sdk');
-const AWS      = require('aws-sdk');
+const dynamodb = new DynamoDB.DocumentClient();
 
 const { TABLE_NAME } = process.env;
 
-
 const createLicence = async (id, points, postcode) => {
-    console.log("In createLicence function");
+    Log.debug(`In createLicence function`);
     const params = {
         TableName: TABLE_NAME,
         Item: {
@@ -19,42 +16,32 @@ const createLicence = async (id, points, postcode) => {
           'postcode': postcode
         },
     };
-
-    console.log(`About to call dynamodb.put`);
-
     await dynamodb.put(params)
         .promise()
-        .then(() => console.log('PutItem succeeded'))
-        .catch(err => console.error('Unable to create licence', id, '. Error JSON:', JSON.stringify(err, null, 2)))
-
+        .then(() => Log.debug('PutItem succeeded'))
+        .catch(err => Log.debug(`Unable to create licence: ${id}. Error JSON: ${JSON.stringify(err, null, 2)}`))
 };
 
+
 const deleteLicence = async (id) => {
-    console.log("In deleteLicence function");
+    Log.debug('In deleteLicence function');
     const params = {
         TableName: TABLE_NAME,
         Key: { 'pk': id }
     };
-
-    console.log(`About to call dynamodb.delete`);
     await dynamodb.delete(params)
         .promise()
-        .then(() => console.log('DeleteItem succeeded'))
-        .catch(err => console.error('Unable to delete licence', id, '. Error JSON:', JSON.stringify(err, null, 2)))
-
-    console.log(`Return from call dynamodb.delete`);
-    
+        .then(() => Log.debug('DeleteItem succeeded'))
+        .catch(err => Log.debug(`Unable to delete licence: ${id}. Error JSON: ${JSON.stringify(err, null, 2)}`))
 };
 
 
 const getLicence = async (id) => {
-    console.log("In getLicence function");
-    console.log(`About to call dynamodb.get`);
+    Log.debug('In getLicence function');
     const licence = await dynamodb.get({
         TableName: TABLE_NAME,
         Key: { 'pk': id },
       });
-    console.log(`Return from call dynamodb.get`);
     return {
         'id': licence.Item.pk,
         'penaltyPoints': licence.Item.penaltyPoints,
@@ -64,7 +51,7 @@ const getLicence = async (id) => {
 
 
 const updateLicence = async (id, points, postcode) => {
-    console.log("In updateLicence function");
+    Log.debug('In updateLicence function');
     const params = {
         TableName: TABLE_NAME,
         Key: { 'pk': id },
@@ -75,13 +62,10 @@ const updateLicence = async (id, points, postcode) => {
         }
     };
 
-    console.log(`About to call dynamodb.update`);
     await dynamodb.update(params)
         .promise()
-        .then(() => console.log('UpdateItem succeeded'))
-        .catch(err => console.error('Unable to update licence', id, '. Error JSON:', JSON.stringify(err, null, 2)))
-
-        console.log(`Return from call dynamodb.update`);
+        .then(() => Log.debug('UpdateItem succeeded'))
+        .catch(err => console.error(`Unable to update licence: ${id}. Error JSON: ${JSON.stringify(err, null, 2)}`))
 };
 
 module.exports = {
@@ -89,4 +73,4 @@ module.exports = {
     deleteLicence,
     updateLicence,
     getLicence
-}
+};

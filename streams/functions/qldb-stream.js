@@ -1,17 +1,10 @@
 const Log = require('@dazn/lambda-powertools-logger');
-
 const {  createLicence, deleteLicence, updateLicence } = require('./helper/dyanamodb-licence');
-
 const deagg = require('aws-kinesis-agg');
-const async = require('async');
-const computeChecksums = true;
-
-const ok = 'OK';
-const error = 'ERROR';
-const REVISION_DETAILS = 'REVISION_DETAILS';
-
 let ion = require("ion-js");
 
+const computeChecksums = true;
+const REVISION_DETAILS = 'REVISION_DETAILS';
 
 module.exports.handler = async (event, context) => {
   Log.debug(`** PRINT MSG: ${JSON.stringify(event, null, 2)}`);

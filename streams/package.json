@@ -11,11 +11,9 @@
   "dependencies": {
     "@dazn/lambda-powertools-logger": "^1.24.1",
     "amazon-qldb-driver-nodejs": "^1.0.0",
-    "async": "^3.2.0",
-    "aws-kinesis-agg": "^4.0.4",
-    "aws-sdk": "^2.708.0",
+    "aws-kinesis-agg": "^4.1.2",
+    "aws-sdk": "^2.709.0",
     "aws-xray-sdk": "^3.1.0",
-    "https": "^1.0.0",
     "ion-js": "^4.0.1",
     "jsbi": "^3.1.3"
   },

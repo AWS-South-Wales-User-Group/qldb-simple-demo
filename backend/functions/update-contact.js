@@ -1,3 +1,7 @@
+/*
+ * Lambda function that implements the update contact functionality
+ */
+
 const { updateContact } = require('./helper/licence');
 const Log = require('@dazn/lambda-powertools-logger');
 const LicenceIntegrityError = require('./lib/LicenceIntegrityError'); 

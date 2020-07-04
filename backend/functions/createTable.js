@@ -1,3 +1,8 @@
+/*
+ * Lambda function used as a custom resource to create the table
+ * in QLDB using CloudFormation
+ */
+
 const { getQldbDriver } = require('./helper/ConnectToLedger');
 const Log = require('@dazn/lambda-powertools-logger');
 const response = require('cfn-response-promise');

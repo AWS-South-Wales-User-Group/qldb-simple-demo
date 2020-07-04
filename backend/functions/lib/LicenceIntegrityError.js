@@ -1,3 +1,6 @@
+/*
+ * Custom error when there is an issue with the details passed in
+ */
 class LicenceIntegrityError extends Error {
     constructor(status, message, description) {
       super(message);

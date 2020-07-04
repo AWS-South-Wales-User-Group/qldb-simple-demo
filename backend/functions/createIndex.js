@@ -1,3 +1,8 @@
+/*
+ * Lambda function used as a custom resource to create the indexes
+ * in QLDB using CloudFormation
+ */
+
 const { Result, TransactionExecutor } = require('amazon-qldb-driver-nodejs')
 const { getQldbDriver } = require('./helper/ConnectToLedger');
 const Log = require('@dazn/lambda-powertools-logger');

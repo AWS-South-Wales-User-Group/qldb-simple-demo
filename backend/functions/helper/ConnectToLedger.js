@@ -1,12 +1,18 @@
+/*
+ * Helper utility from the Amazon DMV QLDB sample application for Nodejs.
+ * This is used to get a QldbDriver - the entry point for all interactions
+ * with QLDB
+ */
+
 const { QldbDriver } = require('amazon-qldb-driver-nodejs');
 
 const qldbDriver = createQldbDriver();
 
 /**
- * Create a driver for creating sessions.
+ * Create a driver for interacting with QLDB.
  * @param ledgerName The name of the ledger to create the driver on.
  * @param serviceConfigurationOptions The configurations for the AWS SDK client that the driver uses.
- * @returns The driver for creating sessions.
+ * @returns The driver for interacting with the specified ledger.
  */
 function createQldbDriver(
   ledgerName = process.env.LEDGER_NAME,
@@ -16,6 +22,10 @@ function createQldbDriver(
   return qldbDriver;
 }
 
+/**
+ * Retrieve a driver for interacting with QLDB.
+ * @returns The driver for interacting with the specified ledger.
+ */
 function getQldbDriver(){
   return qldbDriver;
 };

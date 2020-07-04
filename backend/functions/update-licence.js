@@ -1,4 +1,8 @@
 const { updateLicence } = require('./helper/licence');
+/*
+ * Lambda function that implements the update licence functionality
+ */
+
 const Log = require('@dazn/lambda-powertools-logger');
 const LicenceIntegrityError = require('./lib/LicenceIntegrityError'); 
 const dateFormat = require('dateformat');

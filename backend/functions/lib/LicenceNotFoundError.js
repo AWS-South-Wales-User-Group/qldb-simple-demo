@@ -1,3 +1,6 @@
+/*
+ * Custom error when the requested Licence record does not exist
+ */
 class LicenceNotFoundError extends Error {
     constructor(status, message, description) {
       super(message);

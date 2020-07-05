@@ -12,7 +12,7 @@ const computeChecksums = true;
 const REVISION_DETAILS = 'REVISION_DETAILS';
 
 module.exports.handler = async (event, context) => {
-  Log.debug(`** PRINT MSG: ${JSON.stringify(event, null, 2)}`);
+  console.log(`** PRINT MSG: ${JSON.stringify(event, null, 2)}`);
   Log.debug(`Processing  ${event.Records.length} Kinesis Input Records`);
 
   await Promise.all(
@@ -57,9 +57,10 @@ async function processRecords(records) {
 
       // Only process records where the record type is REVISION_DETAILS
       if (JSON.parse(ion.dumpText(ionRecord.recordType)) !== REVISION_DETAILS) {
-        Log.debug(`Skipping record of type ${ion.dumpPrettyText(ionRecord.recordType)}`);
+        console.log(`Skipping record of type ${ion.dumpPrettyText(ionRecord.recordType)} with payload 
+          ${ion.dumpPrettyText(ionRecord.payload)}`);
       } else {
-        Log.debug(`Ion Record: ${ion.dumpPrettyText(ionRecord.payload)}`);
+        console.log(`Ion Record: ${ion.dumpPrettyText(ionRecord.payload)}`);
         await processIon(ionRecord);
       }
     })

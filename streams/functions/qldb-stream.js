@@ -1,3 +1,8 @@
+/*
+ * Lambda function that consumes messages from a Kinesis data stream that uses the
+ * Kinesis Aggregated Data Format
+ */
+
 const Log = require('@dazn/lambda-powertools-logger');
 const {  createLicence, deleteLicence, updateLicence } = require('./helper/dyanamodb-licence');
 const deagg = require('aws-kinesis-agg');
@@ -19,6 +24,12 @@ module.exports.handler = async (event, context) => {
   Log.debug(`Finished processing in qldb-stream handler`);
 }
 
+
+/**
+ * Promisified function to deaggregate Kinesis record
+ * @param record An individual Kinesis record from the aggregated records
+ * @returns The resolved Promise object containing the deaggregated records
+ */
 const promiseDeaggregate = (record) =>
   new Promise((resolve, reject) => {
     deagg.deaggregateSync(record, computeChecksums, (err, responseObject) => {
@@ -30,7 +41,11 @@ const promiseDeaggregate = (record) =>
     });
 });
 
-
+/**
+ * Processes each deaggregated Kinesis record in order. The function
+ * ignores all records apart from those of typee REVISION_DETAILS
+ * @param records The deaggregated Kinesis records to be processed
+ */
 async function processRecords(records) {
   await Promise.all(
     records.map(async (record) => {
@@ -42,8 +57,7 @@ async function processRecords(records) {
 
       // Only process records where the record type is REVISION_DETAILS
       if (JSON.parse(ion.dumpText(ionRecord.recordType)) !== REVISION_DETAILS) {
-        Log.debug(
-          `Skipping record of type ${ion.dumpPrettyText(ionRecord.recordType)}`);
+        Log.debug(`Skipping record of type ${ion.dumpPrettyText(ionRecord.recordType)}`);
       } else {
         Log.debug(`Ion Record: ${ion.dumpPrettyText(ionRecord.payload)}`);
         await processIon(ionRecord);
@@ -52,6 +66,11 @@ async function processRecords(records) {
   );
 }
 
+/**
+ * Processes each Ion record, and takes the appropriate action to 
+ * create, update or delete a record in DynamoDB
+ * @param ionRecord The Ion data loaded from a Uint8Array
+ */
 async function processIon(ionRecord) {
   // retrieve the version and id from the metadata section of the message
   const version = ion.dumpText(ionRecord.payload.revision.metadata.version);

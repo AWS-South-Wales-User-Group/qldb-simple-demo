@@ -8,6 +8,9 @@ const LicenceIntegrityError = require('../lib/LicenceIntegrityError');
 const LicenceNotFoundError = require('../lib/LicenceNotFoundError');
 const Log = require('@dazn/lambda-powertools-logger');
 
+const AWSXRay = require('aws-xray-sdk-core')
+const AWS = AWSXRay.captureAWS(require('aws-sdk'))
+
 /**
  * Creates a new licence record in the QLDB ledger.
  * @param name The name of the licence holder.

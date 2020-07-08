@@ -4,6 +4,9 @@ const Log = require('@dazn/lambda-powertools-logger');
 const DynamoDB = require('aws-sdk/clients/dynamodb');
 const dynamodb = new DynamoDB.DocumentClient();
 
+const AWSXRay = require('aws-xray-sdk-core')
+const AWS = AWSXRay.captureAWS(require('aws-sdk'))
+
 const { TABLE_NAME } = process.env;
 
 const createLicence = async (id, points, postcode) => {

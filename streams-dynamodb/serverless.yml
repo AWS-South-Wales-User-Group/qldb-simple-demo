@@ -1,4 +1,4 @@
-service: qldb-streams
+service: qldb-streams-dynamodb
 
 provider:
   name: aws
@@ -19,8 +19,8 @@ plugins:
 
 functions:
   streamHandler:
-    name: qldb-stream-${self:provider.stage}
-    handler: functions/qldb-stream.handler
+    name: qldb-streams-dynamodb-${self:provider.stage}
+    handler: functions/qldb-streams-dynamodb.handler
     events:
       - stream:
           type: kinesis
@@ -29,10 +29,8 @@ functions:
           maximumRetryAttempts: 10
           enabled: true
           arn:
-            Fn::GetAtt:
-              - licenceQldbStream
-              - Arn
-    iamRoleStatementsName: qldb-stream-lambda-role-${self:provider.stage}
+            Fn::GetAtt: [licenceQldbStreamsDynamodb, Arn]
+    iamRoleStatementsName: qldb-streams-dynamodb-lambda-role-${self:provider.stage}
     iamRoleStatements: # Grant privilege read from Kinesis work stream 
       - Effect: Allow 
         Action: 
@@ -43,7 +41,7 @@ functions:
           - kinesis:PutRecord 
           - kinesis:PutRecords 
         Resource: 
-          Fn::GetAtt: [licenceQldbStream, Arn]
+          Fn::GetAtt: [licenceQldbStreamsDynamodb, Arn]
       - Effect: Allow
         Action:
           - dynamodb:Query
@@ -63,10 +61,10 @@ functions:
 
 resources:
   Resources:
-    licenceQldbStream: 
+    licenceQldbStreamsDynamodb: 
       Type: AWS::Kinesis::Stream
       Properties: 
-        Name: QLDBBicycleLicence-${self:provider.stage}
+        Name: QLDBBicycleLicence-dynamodb-${self:provider.stage}
         ShardCount: 1
     StreamHandlerLambdaFunction:
       Type: AWS::Lambda::Function

@@ -82,10 +82,11 @@ async function processIon(ionRecord) {
 
   Log.debug(`Version ${version} and id ${id}`);
 
-  // Check to see if the data section exists. Wrapped in a try-catch block
-  // as you cannot create an Ion value from `undefined` which errors
-  try {
-    const revisionData = ion.dumpText(ionRecord.payload.revision.data);
+  // Check to see if the data section exists.
+  if (ionRecord.payload.revision.data == null) {
+    Log.debug(`No data section so handle as a delete`);
+    await deleteLicence(id);
+  } else {
     const points = ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints);
     const postcode = ion
       .dumpText(ionRecord.payload.revision.data.Postcode)
@@ -99,8 +100,5 @@ async function processIon(ionRecord) {
       // Else it is an update
       await updateLicence(id, points, postcode);
     }
-  } catch (err) {
-    Log.debug(`No data section so handle as a delete`);
-    await deleteLicence(id);
   }
 }

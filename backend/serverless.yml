@@ -19,10 +19,22 @@ provider:
   memorySize: 512
   stage: ${opt:stage, 'dev'}
   region: eu-west-1
+  tracing:
+    apiGateway: true
+    lambda: true # Optional, can be true (true equals 'Active'), 'Active' or 'PassThrough'
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED	: "1"
     LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
-
+  iamRoleStatements:
+    - Effect: Allow
+      Action: 
+        - qldb:SendCommand
+      Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
+    - Effect: "Allow"
+      Action:
+        - "xray:PutTraceSegments"
+        - "xray:PutTelemetryRecords"
+      Resource: "*" # Restrict resource to minimum required
 
 plugins:
   - serverless-iam-roles-per-function
@@ -36,11 +48,6 @@ functions:
       - http:
           path: /licences
           method: post
-    iamRoleStatements:
-      - Effect: Allow
-        Action: 
-          - qldb:SendCommand
-        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
 
   updateLicence:
     name: update-licence-${self:provider.stage}
@@ -49,11 +56,6 @@ functions:
       - http:
           path: /licences
           method: put
-    iamRoleStatements:
-      - Effect: Allow
-        Action: 
-          - qldb:SendCommand
-        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
 
   updateContact:
     name: update-contact-${self:provider.stage}
@@ -62,11 +64,6 @@ functions:
       - http:
           path: /licences/contact
           method: put
-    iamRoleStatements:
-      - Effect: Allow
-        Action: 
-          - qldb:SendCommand
-        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}    
 
   deleteLicence:
     name: delete-licence-${self:provider.stage}
@@ -75,11 +72,6 @@ functions:
       - http:
           path: /licences
           method: delete
-    iamRoleStatements:
-      - Effect: Allow
-        Action: 
-          - qldb:SendCommand
-        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
     
   getLicence:
     name: get-licence-${self:provider.stage}
@@ -88,22 +80,12 @@ functions:
       - http:
           path: /licences/{licenceid}
           method: get
-    iamRoleStatements:
-      - Effect: Allow
-        Action: 
-          - qldb:SendCommand
-        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
 
   createTable:
     name: qldb-demo-table-${self:provider.stage}
     handler: functions/createTable.handler
     memorySize: 256
     timeout: 6
-    iamRoleStatements:
-      - Effect: Allow
-        Action: 
-          - qldb:SendCommand
-        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
     environment:
       TABLE_NAME: BicycleLicence
 
@@ -112,11 +94,6 @@ functions:
     handler: functions/createIndex.handler
     memorySize: 256
     timeout: 6
-    iamRoleStatements:
-      - Effect: Allow
-        Action: 
-          - qldb:SendCommand
-        Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
     environment:
       TABLE_NAME: BicycleLicence
       INDEX_NAME_1: GUID

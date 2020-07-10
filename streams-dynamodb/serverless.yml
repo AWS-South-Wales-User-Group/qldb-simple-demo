@@ -83,7 +83,7 @@ resources:
           - AttributeName: "pk"
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
-        
+
     qldbStreamRole:
       Type: 'AWS::IAM::Role'
       Properties:
@@ -123,5 +123,5 @@ resources:
           Fn::GetAtt: [qldbStreamRole, Arn]
         StreamName: QLDBBicycleLicence-dynamodb-${self:provider.stage}
         Tags:
-          - Key: Domain
-            Value: Test
+          - Key: name
+            Value: qldb-simple-demo

@@ -1,0 +1,83 @@
+service: qldb-streams-es
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  memorySize: 512
+  stage: ${opt:stage, 'dev'}
+  region: eu-west-1
+  tracing:
+    lambda: true # Optional, can be true (true equals 'Active'), 'Active' or 'PassThrough'
+  environment:
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED	: "1"
+    TABLE_NAME: BicycleLicence-${self:provider.stage}
+
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-pseudo-parameters
+
+functions:
+  streamHandler:
+    name: qldb-streams-es-${self:provider.stage}
+    handler: functions/qldb-streams-es.handler
+    events:
+      - stream:
+          type: kinesis
+          batchSize: 1
+          startingPosition: TRIM_HORIZON
+          maximumRetryAttempts: 10
+          enabled: true
+          arn:
+            Fn::GetAtt: [licenceQldbStreamsES, Arn]
+    iamRoleStatementsName: qldb-streams-es-lambda-role-${self:provider.stage}
+    iamRoleStatements: # Grant privilege read from Kinesis work stream 
+      - Effect: Allow 
+        Action: 
+          - kinesis:GetRecords 
+          - kinesis:GetShardIterator 
+          - kinesis:DescribeStream 
+          - kinesis:ListStreams 
+          - kinesis:PutRecord 
+          - kinesis:PutRecords 
+        Resource: 
+          Fn::GetAtt: [licenceQldbStreamsES, Arn]
+      - Effect: Allow
+        Action:
+          - es:ESHttpDelete
+          - es:ESHttpGet
+          - es:ESHttpPost
+          - es:ESHttpPut
+        Resource: 
+          Fn::GetAtt: [ElasticsearchDomain, Arn]
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource: "*" # Restrict resource to minimum required
+  
+
+resources:
+  Resources:
+    ElasticsearchDomain:
+      Type: 'AWS::Elasticsearch::Domain'
+      Properties:
+        DomainName: qldb-search
+        ElasticsearchClusterConfig:
+          InstanceCount: '1'
+          ZoneAwarenessEnabled: 'false'
+          InstanceType: m4.large.elasticsearch
+        ElasticsearchVersion: 7.4
+        EBSOptions:
+          EBSEnabled: true
+          VolumeSize: 20
+          VolumeType: gp2
+    licenceQldbStreamsES: 
+      Type: AWS::Kinesis::Stream
+      Properties: 
+        Name: QLDBBicycleLicence-es-${self:provider.stage}
+        ShardCount: 1
+    StreamHandlerLambdaFunction:
+      Type: AWS::Lambda::Function
+      Properties:
+        TracingConfig:
+          Mode: "Active"

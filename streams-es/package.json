@@ -1,0 +1,25 @@
+{
+  "name": "streams-es",
+  "version": "1.0.0",
+  "description": "Sample application for QLDB streams to AWS Elasticsearch",
+  "main": "functions/qldb-streams-es.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@dazn/lambda-powertools-logger": "^1.24.1",
+    "amazon-qldb-driver-nodejs": "^1.0.0",
+    "aws-kinesis-agg": "^4.1.2",
+    "aws-sdk": "^2.709.0",
+    "aws-xray-sdk": "^3.1.0",
+    "ion-js": "^4.0.1",
+    "jsbi": "^3.1.3",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "serverless-iam-roles-per-function": "^2.0.2",
+    "serverless-pseudo-parameters": "^2.5.0"
+  }
+}

@@ -83,3 +83,45 @@ resources:
           - AttributeName: "pk"
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
+
+    qldbStreamRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                - qldb.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+        Path: /
+        Policies:
+          - PolicyName: QLDBBicycleLicence-dynamodb-role-${self:provider.stage}
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - 'kinesis:PutRecord**'
+                    - 'kinesis:DescribeStream'
+                    - 'kinesis:ListShards'
+                  Resource:
+                    Fn::GetAtt: [licenceQldbStreamsDynamodb, Arn]
+
+    myQLDBStream:
+      Type: "AWS::QLDB::Stream"
+      Properties:
+        InclusiveStartTime: "2020-05-29T00:00:00Z"
+        KinesisConfiguration:
+          AggregationEnabled: true
+          StreamArn: 
+            Fn::GetAtt: [licenceQldbStreamsDynamodb, Arn]
+        LedgerName: qldb-simple-demo-${self:provider.stage}
+        RoleArn: 
+          Fn::GetAtt: [qldbStreamRole, Arn]
+        StreamName: QLDBBicycleLicence-dynamodb-${self:provider.stage}
+        Tags:
+          - Key: name
+            Value: qldb-simple-demo

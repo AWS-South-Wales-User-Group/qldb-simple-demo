@@ -61,21 +61,24 @@ functions:
 
 resources:
   Resources:
+
     licenceQldbStreamsDynamodb: 
       Type: AWS::Kinesis::Stream
       Properties: 
         Name: QLDBBicycleLicence-dynamodb-${self:provider.stage}
         ShardCount: 1
+    
     StreamHandlerLambdaFunction:
       Type: AWS::Lambda::Function
       Properties:
         TracingConfig:
           Mode: "Active"
+    
     bicycleLicenceLedgerTable:
       Type: AWS::DynamoDB::Table
       DeletionPolicy: Delete # Use 'Retain' if sls deploy should not delete the table
       Properties:
-        TableName: BicycleLicence-${self:provider.stage}
+        TableName: QLDBBicycleLicence-${self:provider.stage}
         AttributeDefinitions:
           - AttributeName: "pk"
             AttributeType: S
@@ -98,7 +101,7 @@ resources:
                 - 'sts:AssumeRole'
         Path: /
         Policies:
-          - PolicyName: QLDBBicycleLicence-dynamodb-role-${self:provider.stage}
+          - PolicyName: QLDBBicycleLicence-dynamodb-policy-${self:provider.stage}
             PolicyDocument:
               Version: "2012-10-17"
               Statement:
@@ -109,6 +112,7 @@ resources:
                     - 'kinesis:ListShards'
                   Resource:
                     Fn::GetAtt: [licenceQldbStreamsDynamodb, Arn]
+        RoleName: QLDBBicycleLicence-dynamodb-role-${self:provider.stage}
 
     myQLDBStream:
       Type: "AWS::QLDB::Stream"

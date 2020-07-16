@@ -116,6 +116,7 @@ resources:
 
     myQLDBStream:
       Type: "AWS::QLDB::Stream"
+      DependsOn: qldbStreamRole
       Properties:
         InclusiveStartTime: "2020-05-29T00:00:00Z"
         KinesisConfiguration:

@@ -8,7 +8,7 @@ const LicenceNotFoundError = require('./lib/LicenceNotFoundError');
 
 module.exports.handler = async (event) => {
   const { licenceid } = event.pathParameters;
-  Log.debug(`In the get licence handler with licenceid ${licenceid}`);
+  Log.debug(`In the get-licence handler with licenceid ${licenceid}`);
 
   try {
       const response = await getLicence(licenceid.toUpperCase());

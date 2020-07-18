@@ -2,7 +2,6 @@
  * Helper utility that provides the implementation for interacting with QLDB
  */
 
-const { Result, TransactionExecutor } = require('amazon-qldb-driver-nodejs');
 const { getQldbDriver } = require('./ConnectToLedger');
 const LicenceIntegrityError = require('../lib/LicenceIntegrityError');
 const LicenceNotFoundError = require('../lib/LicenceNotFoundError');

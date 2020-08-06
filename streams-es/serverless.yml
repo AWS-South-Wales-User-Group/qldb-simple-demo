@@ -14,12 +14,14 @@ provider:
 
 plugins:
   - serverless-iam-roles-per-function
-  - serverless-pseudo-parameters
+  - serverless-cloudformation-sub-variables
 
 functions:
   streamHandler:
     name: qldb-streams-es-${self:provider.stage}
     handler: functions/qldb-streams-es.handler
+    environment:
+      ELASTICSEARCH_DOMAIN: !GetAtt ElasticSearch.DomainEndpoint
     events:
       - stream:
           type: kinesis
@@ -40,15 +42,13 @@ functions:
           - kinesis:PutRecord 
           - kinesis:PutRecords 
         Resource: 
-          Fn::GetAtt: [licenceQldbStreamsES, Arn]
+          - !GetAtt licenceQldbStreamsES.Arn
       - Effect: Allow
         Action:
           - es:ESHttpDelete
-          - es:ESHttpGet
           - es:ESHttpPost
-          - es:ESHttpPut
         Resource: 
-          Fn::GetAtt: [ElasticsearchDomain, Arn]
+          - !GetAtt ElasticSearch.Arn
       - Effect: "Allow"
         Action:
           - "xray:PutTraceSegments"
@@ -58,19 +58,33 @@ functions:
 
 resources:
   Resources:
-    ElasticsearchDomain:
-      Type: 'AWS::Elasticsearch::Domain'
+    ElasticSearch:
+      Type: AWS::Elasticsearch::Domain
       Properties:
-        DomainName: qldb-search
+        DomainName: "#{AWS::StackName}"
+        ElasticsearchVersion: 7.7
         ElasticsearchClusterConfig:
+          DedicatedMasterEnabled: false
           InstanceCount: '1'
-          ZoneAwarenessEnabled: 'false'
-          InstanceType: m4.large.elasticsearch
-        ElasticsearchVersion: 7.4
+          InstanceType: t2.medium.elasticsearch
         EBSOptions:
-          EBSEnabled: true
-          VolumeSize: 20
-          VolumeType: gp2
+          EBSEnabled: 'true'
+          Iops: 0
+          VolumeSize: 10
+          VolumeType: standard
+        AccessPolicies:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+            Action: es:ESHttp*
+            Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+            Action: es:ESHttp*
+            Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/_plugin/kibana*
     licenceQldbStreamsES: 
       Type: AWS::Kinesis::Stream
       Properties: 
@@ -81,3 +95,8 @@ resources:
       Properties:
         TracingConfig:
           Mode: "Active"
+
+Outputs:
+  ElasticSearchDomain:
+    Description: Domain name of the DL ElasticSearch Cluster
+    Value: !GetAtt ElasticSearch.DomainEndpoint

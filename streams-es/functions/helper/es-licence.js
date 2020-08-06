@@ -1,95 +1,70 @@
 const Log = require('@dazn/lambda-powertools-logger');
 
+
+const AWS = require('aws-sdk');
 const path = require('path');
 
-const AWSXRay = require('aws-xray-sdk-core')
-const AWS = AWSXRay.captureAWS(require('aws-sdk'))
+const AWS_REGION = 'eu-west-1';
+const { ELASTICSEARCH_DOMAIN } = process.env;
+const endpoint = new AWS.Endpoint(ELASTICSEARCH_DOMAIN);
+const httpClient = new AWS.HttpClient();
+const credentialsProvider = new AWS.CredentialProviderChain();
 
-/*
- * The AWS credentials are picked up from the environment.
- * They belong to the IAM role assigned to the Lambda function.
- * Since the ES requests are signed using these credentials,
- * make sure to apply a policy that allows ES domain operations
- * to the role.
+
+/**
+ * Sends a request to Elasticsearch
+ *
+ * @param {string} httpMethod - The HTTP method, e.g. 'GET', 'PUT', 'DELETE', etc
+ * @param {string} requestPath - The HTTP path (relative to the Elasticsearch domain), e.g. '.kibana'
+ * @param {Object} [payload] - An optional JavaScript object that will be serialized to the HTTP request body
+ * @returns {Promise} Promise - object with the result of the HTTP response
  */
-var creds = new AWS.EnvironmentCredentials('AWS');
+async function sendRequest({ httpMethod, requestPath, payload }) {
+    console.log(`In sendRequest with method ${httpMethod} path ${requestPath} and payload ${payload}`);
+    const credentials = await credentialsProvider.resolvePromise();
+    const request = new AWS.HttpRequest(endpoint, AWS_REGION);
 
+    request.method = httpMethod;
+    request.path = path.join(request.path, requestPath);
+    request.body = JSON.stringify(payload);
+    request.headers['Content-Type'] = 'application/json';
+    request.headers.Host = `${ELASTICSEARCH_DOMAIN}`;
 
+    const signer = new AWS.Signers.V4(request, 'es');
+    signer.addAuthorization(credentials, new Date());
 
-var esDomain = {
-    region: 'eu-west-1',
-    endpoint: 'https://search-qldb-search-lpcdkxcvuuf5ma5zetiweyd76q.eu-west-1.es.amazonaws.com',
-    index: 'myindex',
-    doctype: 'mytype'
-};
-var endpoint = new AWS.Endpoint(esDomain.endpoint);
+    return new Promise((resolve, reject) => {
+        console.log("about to make the request to ES");
+        httpClient.handleRequest(
+            request,
+            null,
+            (response) => {
+                const { statusCode, statusMessage, headers } = response;
+                console.log(`statusCode ${statusCode} statusMessage ${statusMessage} headers ${headers}`);
 
-
-const { TABLE_NAME } = process.env;
-
-const createLicence = async (doc) => {
-    Log.debug(`In createLicence function with doc ${doc}`);
-
-    let req = new AWS.HttpRequest(endpoint);
-
-    req.method = 'POST';
-    req.path = path.join('/', esDomain.index, esDomain.doctype);
-    req.region = esDomain.region;
-    req.headers['presigned-expires'] = false;
-    req.headers['Host'] = endpoint.host;
-    req.body = doc;
-
-    let signer = new AWS.Signers.V4(req , 'es');  // es: service code
-    signer.addAuthorization(creds, new Date());
-
-    let send = new AWS.NodeHttpClient();
-
-
-    Log.debug(`About to call handleRequest`);
-
-    send.handleRequest(req, null, function(httpResp) {
-        var respBody = '';
-        httpResp.on('data', function (chunk) {
-            respBody += chunk;
-        });
-        httpResp.on('end', function (chunk) {
-            console.log('Response: ' + respBody);
-//            context.succeed('Lambda added document ' + doc);
-        });
-    }, function(err) {
-        console.log('Error: ' + err);
-//        context.fail('Lambda failed with error ' + err);
+                let body = '';
+                response.on('data', (chunk) => {
+                    body += chunk;
+                    console.log(`body ${body}`);
+                });
+                response.on('end', () => {
+                    const data = {
+                        statusCode,
+                        statusMessage,
+                        headers,
+                    };
+                    if (body) {
+                        data.body = JSON.parse(body);
+                    }
+                    resolve(data);
+                    console.log(`data ${data}`);
+                });
+            },
+            (err) => {
+                console.log('Error inserting into ES: ' + err);
+                reject(err);
+            }
+        );
     });
-
-    Log.debug(`Called handleRequest`);
-
-
-
-};
-
-
-const deleteLicence = async (id) => {
-    Log.debug('In deleteLicence function');
-    const params = {
-        TableName: TABLE_NAME,
-        Key: { 'pk': id }
-    };
-};
-
-
-const getLicence = async (id) => {
-    Log.debug('In getLicence function');
-    return {}
-};
-
-
-const updateLicence = async (id, points, postcode) => {
-    Log.debug('In updateLicence function');
-};
-
-module.exports = {
-    createLicence,
-    deleteLicence,
-    updateLicence,
-    getLicence
-};
+}
+module.exports.sendRequest = sendRequest;

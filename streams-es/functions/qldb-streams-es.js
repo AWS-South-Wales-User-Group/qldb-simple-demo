@@ -4,9 +4,10 @@
  */
 
 const Log = require('@dazn/lambda-powertools-logger');
-const {  createLicence, deleteLicence, updateLicence } = require('./helper/es-licence');
+const {  sendRequest } = require('./helper/es-licence');
 const deagg = require('aws-kinesis-agg');
 let ion = require("ion-js");
+
 
 const computeChecksums = true;
 const REVISION_DETAILS = 'REVISION_DETAILS';
@@ -85,9 +86,10 @@ async function processIon(ionRecord) {
   // Check to see if the data section exists.
   if (ionRecord.payload.revision.data == null) {
     Log.debug(`No data section so handle as a delete`);
-    console.log(`Skipping update when it should be update`);
+    console.log('About to delete a record from elasticsearch');
+    const response = await sendRequest({ httpMethod: 'DELETE', requestPath: '/licence/_doc/' + id});
+    console.log(`RESPONSE: ` + JSON.stringify(response));
 
-//    await deleteLicence(id);
   } else {
     const points = ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints);
     const postcode = ion
@@ -96,20 +98,40 @@ async function processIon(ionRecord) {
 
     Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}`);
 
-    const doc = `{
-      'id': id,
-      'points': points.
-      'postcode': postcode,
-      'version': version
-    }`;
-
+    
+    let doc;
     // if the first version then we need to do a create
     if (version == 0) {
-      await createLicence(doc);
+      doc = {
+        "points": points,
+        "postcode": postcode,
+        "version": version
+      };
+      console.log('About to insert a new record to elasticsearch');
+      const response = await sendRequest({ httpMethod: 'POST', requestPath: '/licence/_doc/' + id, payload: doc });
+      console.log(`RESPONSE: ` + JSON.stringify(response));
+
     } else {
-      // Else it is an update
-//      await updateLicence(id, points, postcode);
-        console.log(`Skipping update when it should be update`);
+
+      doc = {
+        "script" : {
+          "source": "if (Integer.parseInt(ctx._source.version) < Integer.parseInt(params.version)) { ctx._source.points = params.points; ctx._source.postcode = params.postcode; ctx._source.version = params.version; }",
+          "lang": "painless",
+          "params" : {
+            "points": points,
+            "postcode": postcode,
+            "version": version
+          }
+        },
+        "upsert": {
+          "points": points,
+          "postcode": postcode,
+          "version": version
+        }
+      };
+      console.log('About to update a record to elasticsearch');
+      const response = await sendRequest({ httpMethod: 'POST', requestPath: '/licence/_update/' + id, payload: doc });
+      console.log(`RESPONSE: ` + JSON.stringify(response));
     }
   }
 }

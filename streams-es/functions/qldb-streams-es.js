@@ -86,7 +86,6 @@ async function processIon(ionRecord) {
   // Check to see if the data section exists.
   if (ionRecord.payload.revision.data == null) {
     Log.debug(`No data section so handle as a delete`);
-    console.log('About to delete a record from elasticsearch');
     const response = await sendRequest({ httpMethod: 'DELETE', requestPath: '/licence/_doc/' + id});
     console.log(`RESPONSE: ` + JSON.stringify(response));
 
@@ -96,13 +95,19 @@ async function processIon(ionRecord) {
       .dumpText(ionRecord.payload.revision.data.Postcode)
       .replace(/['"]+/g, "");
 
-    Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}`);
-
+    const licenceId = ion
+      .dumpText(ionRecord.payload.revision.data.LicenceId)
+      .replace(/['"]+/g, "");
     
+
+    Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}. licenceId: ${licenceId}`);
+
+
     let doc;
     // if the first version then we need to do a create
     if (version == 0) {
       doc = {
+        "licenceId": licenceId,
         "points": points,
         "postcode": postcode,
         "version": version
@@ -115,18 +120,14 @@ async function processIon(ionRecord) {
 
       doc = {
         "script" : {
-          "source": "if (Integer.parseInt(ctx._source.version) < Integer.parseInt(params.version)) { ctx._source.points = params.points; ctx._source.postcode = params.postcode; ctx._source.version = params.version; }",
+          "source": "if (Integer.parseInt(ctx._source.version) < Integer.parseInt(params.version)) { ctx._source.licenceId = params.licenceId; ctx._source.points = params.points; ctx._source.postcode = params.postcode; ctx._source.version = params.version; } else { ctx.op = 'none' }",
           "lang": "painless",
           "params" : {
+            "licenceId": licenceId,
             "points": points,
             "postcode": postcode,
             "version": version
           }
-        },
-        "upsert": {
-          "points": points,
-          "postcode": postcode,
-          "version": version
         }
       };
       console.log('About to update a record to elasticsearch');

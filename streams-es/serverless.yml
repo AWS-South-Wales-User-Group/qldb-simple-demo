@@ -1,0 +1,145 @@
+service: qldb-streams-es
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  memorySize: 512
+  stage: ${opt:stage, 'dev'}
+  region: eu-west-1
+  tracing:
+    lambda: true # Optional, can be true (true equals 'Active'), 'Active' or 'PassThrough'
+  environment:
+    AWS_NODEJS_CONNECTION_REUSE_ENABLED	: "1"
+    TABLE_NAME: BicycleLicence-${self:provider.stage}
+
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-cloudformation-sub-variables
+
+functions:
+  streamHandler:
+    name: qldb-streams-es-${self:provider.stage}
+    handler: functions/qldb-streams-es.handler
+    environment:
+      ELASTICSEARCH_DOMAIN: !GetAtt ElasticSearch.DomainEndpoint
+    events:
+      - stream:
+          type: kinesis
+          batchSize: 1
+          startingPosition: TRIM_HORIZON
+          maximumRetryAttempts: 10
+          enabled: true
+          arn:
+            Fn::GetAtt: [licenceQldbStreamsES, Arn]
+    iamRoleStatementsName: qldb-streams-es-lambda-role-${self:provider.stage}
+    iamRoleStatements: # Grant privilege read from Kinesis work stream 
+      - Effect: Allow 
+        Action: 
+          - kinesis:GetRecords 
+          - kinesis:GetShardIterator 
+          - kinesis:DescribeStream 
+          - kinesis:ListStreams 
+          - kinesis:PutRecord 
+          - kinesis:PutRecords 
+        Resource: 
+          - !GetAtt licenceQldbStreamsES.Arn
+      - Effect: Allow
+        Action:
+          - es:ESHttpDelete
+          - es:ESHttpPost
+        Resource: 
+          - !GetAtt ElasticSearch.Arn
+      - Effect: "Allow"
+        Action:
+          - "xray:PutTraceSegments"
+          - "xray:PutTelemetryRecords"
+        Resource: "*" # Restrict resource to minimum required
+  
+
+resources:
+  Resources:
+    
+    ElasticSearch:
+      Type: AWS::Elasticsearch::Domain
+      Properties:
+        DomainName: "#{AWS::StackName}"
+        ElasticsearchVersion: 7.7
+        ElasticsearchClusterConfig:
+          DedicatedMasterEnabled: false
+          InstanceCount: '1'
+          InstanceType: t2.medium.elasticsearch
+        EBSOptions:
+          EBSEnabled: 'true'
+          Iops: 0
+          VolumeSize: 10
+          VolumeType: standard
+        AccessPolicies:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+            Action: es:ESHttp*
+            Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+            Action: es:ESHttp*
+            Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/_plugin/kibana*
+  
+    licenceQldbStreamsES: 
+      Type: AWS::Kinesis::Stream
+      Properties: 
+        Name: QLDBBicycleLicence-es-${self:provider.stage}
+        ShardCount: 1
+
+    StreamHandlerLambdaFunction:
+      Type: AWS::Lambda::Function
+      Properties:
+        TracingConfig:
+          Mode: "Active"
+
+    QLDBStreamRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - qldb.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+        Path: /
+        ManagedPolicyArns:
+          - !Ref QLDBStreamManagedPolicy
+  
+    QLDBStreamManagedPolicy:
+      Type: 'AWS::IAM::ManagedPolicy'
+      Properties:
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: QLDBStreamKinesisESPermissions
+              Effect: Allow
+              Action:
+                - 'kinesis:PutRecord*'
+                - 'kinesis:DescribeStream'
+                - 'kinesis:ListShards'
+              Resource: 
+                Fn::GetAtt: [licenceQldbStreamsES, Arn]
+
+    ESQLDBStream:
+      Type: AWS::QLDB::Stream
+      Properties: 
+        InclusiveStartTime: "2020-05-29T00:00:00Z"
+        KinesisConfiguration: 
+          AggregationEnabled: true
+          StreamArn:
+            Fn::GetAtt: [licenceQldbStreamsES, Arn]
+        LedgerName: qldb-simple-demo-dev
+        RoleArn: 
+          Fn::GetAtt: [QLDBStreamRole, Arn]
+        StreamName: QLDBStream-elastic-${self:provider.stage}
+            

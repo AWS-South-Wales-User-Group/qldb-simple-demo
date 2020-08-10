@@ -58,6 +58,7 @@ functions:
 
 resources:
   Resources:
+    
     ElasticSearch:
       Type: AWS::Elasticsearch::Domain
       Properties:
@@ -85,18 +86,60 @@ resources:
               AWS: "*"
             Action: es:ESHttp*
             Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/_plugin/kibana*
+  
     licenceQldbStreamsES: 
       Type: AWS::Kinesis::Stream
       Properties: 
         Name: QLDBBicycleLicence-es-${self:provider.stage}
         ShardCount: 1
+
     StreamHandlerLambdaFunction:
       Type: AWS::Lambda::Function
       Properties:
         TracingConfig:
           Mode: "Active"
 
-Outputs:
-  ElasticSearchDomain:
-    Description: Domain name of the DL ElasticSearch Cluster
-    Value: !GetAtt ElasticSearch.DomainEndpoint
+    QLDBStreamRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - qldb.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+        Path: /
+        ManagedPolicyArns:
+          - !Ref QLDBStreamManagedPolicy
+  
+    QLDBStreamManagedPolicy:
+      Type: 'AWS::IAM::ManagedPolicy'
+      Properties:
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: QLDBStreamKinesisESPermissions
+              Effect: Allow
+              Action:
+                - 'kinesis:PutRecord*'
+                - 'kinesis:DescribeStream'
+                - 'kinesis:ListShards'
+              Resource: 
+                Fn::GetAtt: [licenceQldbStreamsES, Arn]
+
+    ESQLDBStream:
+      Type: AWS::QLDB::Stream
+      Properties: 
+        InclusiveStartTime: "2020-05-29T00:00:00Z"
+        KinesisConfiguration: 
+          AggregationEnabled: true
+          StreamArn:
+            Fn::GetAtt: [licenceQldbStreamsES, Arn]
+        LedgerName: qldb-simple-demo-dev
+        RoleArn: 
+          Fn::GetAtt: [QLDBStreamRole, Arn]
+        StreamName: QLDBStream-elastic-${self:provider.stage}
+            

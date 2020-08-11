@@ -75,18 +75,17 @@ async function processRecords(records) {
  */
 async function processIon(ionRecord) {
   // retrieve the version and id from the metadata section of the message
-  const version = ion.dumpText(ionRecord.payload.revision.metadata.version);
+  const version = parseInt(ion.dumpText(ionRecord.payload.revision.metadata.version));
   const id = ion
     .dumpText(ionRecord.payload.revision.metadata.id)
     .replace(/['"]+/g, "");
   const revision = ion.dumpText(ionRecord.payload.revision);
-
-  Log.debug(`Version ${version} and id ${id}`);
+  let response;
 
   // Check to see if the data section exists.
   if (ionRecord.payload.revision.data == null) {
     Log.debug(`No data section so handle as a delete`);
-    const response = await sendRequest({ httpMethod: 'DELETE', requestPath: '/licence/_doc/' + id});
+    response = await sendRequest({ httpMethod: 'DELETE', requestPath: `/licence/_doc/${id}?version=${version}&version_type=external`});
     console.log(`RESPONSE: ` + JSON.stringify(response));
 
   } else {
@@ -99,40 +98,16 @@ async function processIon(ionRecord) {
       .dumpText(ionRecord.payload.revision.data.LicenceId)
       .replace(/['"]+/g, "");
     
-
     Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}. licenceId: ${licenceId}`);
 
-
-    let doc;
-    // if the first version then we need to do a create
-    if (version == 0) {
-      doc = {
-        "licenceId": licenceId,
-        "points": points,
-        "postcode": postcode,
-        "version": version
-      };
-      console.log('About to insert a new record to elasticsearch');
-      const response = await sendRequest({ httpMethod: 'POST', requestPath: '/licence/_doc/' + id, payload: doc });
-      console.log(`RESPONSE: ` + JSON.stringify(response));
-
-    } else {
-
-      doc = {
-        "script" : {
-          "source": "if (Integer.parseInt(ctx._source.version) < Integer.parseInt(params.version)) { ctx._source.licenceId = params.licenceId; ctx._source.points = params.points; ctx._source.postcode = params.postcode; ctx._source.version = params.version; } else { ctx.op = 'none' }",
-          "lang": "painless",
-          "params" : {
-            "licenceId": licenceId,
-            "points": points,
-            "postcode": postcode,
-            "version": version
-          }
-        }
-      };
-      console.log('About to update a record to elasticsearch');
-      const response = await sendRequest({ httpMethod: 'POST', requestPath: '/licence/_update/' + id, payload: doc });
-      console.log(`RESPONSE: ` + JSON.stringify(response));
-    }
+    const doc = {
+      "licenceId": licenceId,
+      "points": points,
+      "postcode": postcode,
+      "version": version
+    };
+    console.log('About to create/update a record in elasticsearch');
+    response = await sendRequest({ httpMethod: 'PUT', requestPath: `/licence/_doc/${id}?version=${version}&version_type=external`, payload: doc });
+    console.log(`RESPONSE: ` + JSON.stringify(response));
   }
 }

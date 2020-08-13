@@ -89,7 +89,7 @@ async function processIon(ionRecord) {
     console.log(`RESPONSE: ` + JSON.stringify(response));
 
   } else {
-    const points = ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints);
+    const points = parseInt(ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints));
     const postcode = ion
       .dumpText(ionRecord.payload.revision.data.Postcode)
       .replace(/['"]+/g, "");

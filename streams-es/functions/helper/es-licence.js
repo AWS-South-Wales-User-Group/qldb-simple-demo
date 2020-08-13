@@ -4,8 +4,7 @@ const Log = require('@dazn/lambda-powertools-logger');
 const AWS = require('aws-sdk');
 const path = require('path');
 
-const AWS_REGION = 'eu-west-1';
-const { ELASTICSEARCH_DOMAIN } = process.env;
+const { ELASTICSEARCH_DOMAIN, REGION } = process.env;
 const endpoint = new AWS.Endpoint(ELASTICSEARCH_DOMAIN);
 const httpClient = new AWS.HttpClient();
 const credentialsProvider = new AWS.CredentialProviderChain();
@@ -22,7 +21,7 @@ const credentialsProvider = new AWS.CredentialProviderChain();
 async function sendRequest({ httpMethod, requestPath, payload }) {
     console.log(`In sendRequest with method ${httpMethod} path ${requestPath} and payload ${payload}`);
     const credentials = await credentialsProvider.resolvePromise();
-    const request = new AWS.HttpRequest(endpoint, AWS_REGION);
+    const request = new AWS.HttpRequest(endpoint, REGION);
 
     request.method = httpMethod;
     request.path = path.join(request.path, requestPath);

@@ -1,0 +1,22 @@
+---
+Type: AWS::Elasticsearch::Domain
+Properties:
+  DomainName: "#{AWS::StackName}"
+  ElasticsearchVersion: 7.7
+  ElasticsearchClusterConfig:
+    DedicatedMasterEnabled: false
+    InstanceCount: "1"
+    InstanceType: t2.medium.elasticsearch
+  EBSOptions:
+    EBSEnabled: "true"
+    Iops: 0
+    VolumeSize: 10
+    VolumeType: standard
+  AccessPolicies:
+    Version: "2012-10-17"
+    Statement:
+      - Effect: Allow
+        Principal:
+          AWS: "*"
+        Action: es:ESHttp*
+        Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*

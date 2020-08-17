@@ -97,17 +97,28 @@ async function processIon(ionRecord) {
     const licenceId = ion
       .dumpText(ionRecord.payload.revision.data.LicenceId)
       .replace(/['"]+/g, "");
+
+    const name = ion
+      .dumpText(ionRecord.payload.revision.data.Name)
+      .replace(/['"]+/g, "");
+
     
-    Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}. licenceId: ${licenceId}`);
+    Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}, licenceId: ${licenceId}, name: ${name}
+    }`);
 
     const doc = {
       "licenceId": licenceId,
       "points": points,
       "postcode": postcode,
-      "version": version
+      "version": version,
+      "name": name
     };
     console.log('About to create/update a record in elasticsearch');
-    response = await sendRequest({ httpMethod: 'PUT', requestPath: `/licence/_doc/${id}?version=${version}&version_type=external`, payload: doc });
+    response = await sendRequest({ 
+      httpMethod: 'PUT', 
+      requestPath: `/licence/_doc/${id}?version=${version}&version_type=external`, 
+      payload: doc 
+    });
     console.log(`RESPONSE: ` + JSON.stringify(response));
   }
 }

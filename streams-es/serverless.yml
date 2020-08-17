@@ -6,6 +6,7 @@ provider:
   memorySize: 512
   stage: ${opt:stage, 'dev'}
   region: eu-west-1
+  stackName: ${self:service}
   tracing:
     lambda: true # Optional, can be true (true equals 'Active'), 'Active' or 'PassThrough'
   environment:
@@ -14,6 +15,13 @@ provider:
 plugins:
   - serverless-iam-roles-per-function
   - serverless-cloudformation-sub-variables
+  - serverless-webpack
+
+custom:
+  webpack:
+    webpackConfig: 'webpack.config.js'   # Name of webpack configuration file
+    includeModules: false   # Node modules configuration for packaging
+    packager: 'npm'   # Packager that will be used to package your external modules
 
 functions:
   streamHandler:
@@ -29,8 +37,12 @@ functions:
           startingPosition: TRIM_HORIZON
           maximumRetryAttempts: 10
           enabled: true
-          arn:
-            Fn::GetAtt: [licenceQldbStreamsES, Arn]
+          arn: !GetAtt licenceQldbStreamsES.Arn
+    vpc:
+      securityGroupIds:
+        - "Fn::GetAtt": ElasticSecurityGroup.GroupId
+      subnetIds:
+        - Ref: ElasticSubnetA
     iamRoleStatementsName: qldb-streams-es-lambda-role-${self:provider.stage}
     iamRoleStatements: # Grant privilege read from Kinesis work stream 
       - Effect: Allow 
@@ -45,8 +57,10 @@ functions:
           - !GetAtt licenceQldbStreamsES.Arn
       - Effect: Allow
         Action:
-          - es:ESHttpDelete
           - es:ESHttpPost
+          - es:ESHttpPut
+          - es:ESHttpDelete
+          - es:ESHttpGet
         Resource: 
           - !GetAtt ElasticSearch.Arn
       - Effect: "Allow"
@@ -54,11 +68,10 @@ functions:
           - "xray:PutTraceSegments"
           - "xray:PutTelemetryRecords"
         Resource: "*" # Restrict resource to minimum required
-  
 
 resources:
   Resources:
-    
+
     ElasticSearch:
       Type: AWS::Elasticsearch::Domain
       Properties:
@@ -66,28 +79,100 @@ resources:
         ElasticsearchVersion: 7.7
         ElasticsearchClusterConfig:
           DedicatedMasterEnabled: false
-          InstanceCount: '1'
+          InstanceCount: "1"
           InstanceType: t2.medium.elasticsearch
         EBSOptions:
-          EBSEnabled: 'true'
+          EBSEnabled: "true"
           Iops: 0
           VolumeSize: 10
           VolumeType: standard
         AccessPolicies:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                AWS: "*"
+              Action: es:ESHttp*
+              Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*
+        VPCOptions: 
+          SubnetIds: 
+            - !Ref ElasticSubnetA 
+          SecurityGroupIds: 
+            - !Ref ElasticSecurityGroup
+
+    ElasticStreamRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
-          - Effect: Allow
-            Principal:
-              AWS: "*"
-            Action: es:ESHttp*
-            Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*
-          - Effect: Allow
-            Principal:
-              AWS: "*"
-            Action: es:ESHttp*
-            Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/_plugin/kibana*
-  
-    licenceQldbStreamsES: 
+            - Effect: Allow
+              Principal:
+                Service:
+                  - es.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+        Path: /
+        ManagedPolicyArns:
+          - !Ref ElasticStreamManagedPolicy
+
+    ElasticStreamManagedPolicy:
+      Type: 'AWS::IAM::ManagedPolicy'
+      Properties:
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: ElasticVPCPermissions
+              Effect: Allow
+              Action:
+                - 'ec2:CreateNetworkInterface'
+                - 'ec2:DeleteNetworkInterface'
+                - 'ec2:DescribeNetworkInterfaces'
+                - 'ec2:ModifyNetworkInterfaceAttribute'
+                - 'ec2:DescribeSecurityGroups'
+                - 'ec2:DescribeSubnets'
+                - 'ec2:DescribeVpcs'
+              Resource: "*"
+
+    ElasticVPC:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: "10.0.0.0/16"
+        EnableDnsSupport: "true"
+        EnableDnsHostnames: "true"
+        Tags:
+          - Key: Name
+            Value: qldb-streams-elastic
+
+    ElasticSubnetA:
+      DependsOn: ElasticVPC
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId:
+          Ref: ElasticVPC
+        AvailabilityZone: ${self:provider.region}a
+        CidrBlock: "10.0.2.0/24"
+        Tags:
+          - Key: Name
+            Value: qldb-streams-es-a
+        
+    ElasticSecurityGroup:
+      DependsOn: ElasticVPC
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: SecurityGroup for Elasticsearch
+        VpcId:
+          Ref: ElasticVPC
+        SecurityGroupIngress: 
+          - FromPort: '443' 
+            IpProtocol: tcp 
+            ToPort: '443' 
+            CidrIp: 0.0.0.0/0
+        Tags:
+          - Key: Name
+            Value: qldb-streams-es-sg
+
+    licenceQldbStreamsES:
       Type: AWS::Kinesis::Stream
       Properties: 
         Name: QLDBBicycleLicence-es-${self:provider.stage}
@@ -114,7 +199,7 @@ resources:
         Path: /
         ManagedPolicyArns:
           - !Ref QLDBStreamManagedPolicy
-  
+
     QLDBStreamManagedPolicy:
       Type: 'AWS::IAM::ManagedPolicy'
       Properties:
@@ -142,4 +227,18 @@ resources:
         RoleArn: 
           Fn::GetAtt: [QLDBStreamRole, Arn]
         StreamName: QLDBStream-elastic-${self:provider.stage}
+
+Outputs:
+  ESDomainArn: 
+    Value: !GetAtt ElasticsearchDomain.DomainArn 
+    Export:
+      Name: "#{AWS::StackName}:${self:provider.stage}:ElasticSearch:DomainArn"
+  ESDomainEndpoint: 
+    Value: !GetAtt ElasticsearchDomain.DomainEndpoint 
+    Export:
+      Name: "#{AWS::StackName}:${self:provider.stage}:ElasticSearch:DomainEndpoint"
+  SecurityGroupId: 
+    Value: !Ref ElasticSecurityGroup
+  SubnetId: 
+    Value: !Ref ElasticSubnetA
             

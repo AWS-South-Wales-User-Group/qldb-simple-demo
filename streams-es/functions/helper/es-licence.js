@@ -7,7 +7,7 @@ const path = require('path');
 const { ELASTICSEARCH_DOMAIN, REGION } = process.env;
 const endpoint = new AWS.Endpoint(ELASTICSEARCH_DOMAIN);
 const httpClient = new AWS.HttpClient();
-const credentialsProvider = new AWS.CredentialProviderChain();
+const creds = new AWS.EnvironmentCredentials('AWS');
 
 
 /**
@@ -20,7 +20,6 @@ const credentialsProvider = new AWS.CredentialProviderChain();
  */
 async function sendRequest({ httpMethod, requestPath, payload }) {
     console.log(`In sendRequest with method ${httpMethod} path ${requestPath} and payload ${payload}`);
-    const credentials = await credentialsProvider.resolvePromise();
     const request = new AWS.HttpRequest(endpoint, REGION);
 
     request.method = httpMethod;
@@ -30,7 +29,7 @@ async function sendRequest({ httpMethod, requestPath, payload }) {
     request.headers.Host = `${ELASTICSEARCH_DOMAIN}`;
 
     const signer = new AWS.Signers.V4(request, 'es');
-    signer.addAuthorization(credentials, new Date());
+    signer.addAuthorization(creds, new Date());
 
     return new Promise((resolve, reject) => {
         console.log("about to make the request to ES");

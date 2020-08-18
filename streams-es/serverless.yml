@@ -80,12 +80,20 @@ resources:
         ElasticsearchClusterConfig:
           DedicatedMasterEnabled: false
           InstanceCount: "1"
-          InstanceType: t2.medium.elasticsearch
+          InstanceType: r5.large.elasticsearch
+          ZoneAwarenessEnabled: false
         EBSOptions:
-          EBSEnabled: "true"
+          EBSEnabled: true
           Iops: 0
           VolumeSize: 10
           VolumeType: standard
+        EncryptionAtRestOptions:
+          Enabled: true
+          KmsKeyId: arn:aws:kms:${self:provider.region}:#{AWS::AccountId}:alias/aws/es
+        NodeToNodeEncryptionOptions:
+          Enabled: true
+        DomainEndpointOptions:
+          EnforceHTTPS: true
         AccessPolicies:
           Version: "2012-10-17"
           Statement:
@@ -138,8 +146,8 @@ resources:
       Type: AWS::EC2::VPC
       Properties:
         CidrBlock: "10.0.0.0/16"
-        EnableDnsSupport: "true"
-        EnableDnsHostnames: "true"
+        EnableDnsSupport: true
+        EnableDnsHostnames: true
         Tags:
           - Key: Name
             Value: qldb-streams-elastic

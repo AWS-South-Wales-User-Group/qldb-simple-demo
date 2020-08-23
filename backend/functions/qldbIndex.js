@@ -11,8 +11,8 @@ const response = require('cfn-response-promise');
 
 module.exports.handler = async (event,context) => {
   try {
-
     if (event.RequestType === 'Create') {
+      Log.debug('QLDB Index request received:\n' + JSON.stringify(event, null, 2));
       try {
           const qldbDriver = await getQldbDriver();
           await qldbDriver.executeLambda(async (txn) => {
@@ -26,9 +26,17 @@ module.exports.handler = async (event,context) => {
           Log.error(`Unable to connect: ${e}`);
           throw e;
       }
+      const responseData = {'requestType': event.RequestType};
+      await response.send(event, context, response.SUCCESS, responseData);  
+    } else if (event.RequestType === 'Delete') {
+      Log.debug('Request received to delete QLDB index');
+      // Do nothing as table will be deleted as part of deleting QLDB Ledger
+      const responseData = {'requestType': event.RequestType};
+      await response.send(event, context, response.SUCCESS, responseData);  
+    } else {
+      Log.error('Did not recognise event type resource');
+      await response.send(event, context, response.FAILED);
     }
-    const responseData = {'requestType': event.RequestType};
-    await response.send(event, context, response.SUCCESS, responseData);
   }
   catch(error) {
     Log.error(`catch all error: ${error}`);

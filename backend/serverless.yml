@@ -83,7 +83,7 @@ functions:
 
   createTable:
     name: qldb-demo-table-${self:provider.stage}
-    handler: functions/createTable.handler
+    handler: functions/qldbTable.handler
     memorySize: 256
     timeout: 6
     environment:
@@ -91,7 +91,7 @@ functions:
 
   createIndex:
     name: qldb-demo-index-${self:provider.stage}
-    handler: functions/createIndex.handler
+    handler: functions/qldbIndex.handler
     memorySize: 256
     timeout: 6
     environment:

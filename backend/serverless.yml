@@ -39,6 +39,14 @@ provider:
 plugins:
   - serverless-iam-roles-per-function
   - serverless-pseudo-parameters
+  - serverless-webpack
+
+custom:
+  webpack:
+    webpackConfig: 'webpack.config.js'   # Name of webpack configuration file
+    includeModules: false   # Node modules configuration for packaging
+    packager: 'npm'   # Packager that will be used to package your external modules
+  
 
 functions:
   createLicence:

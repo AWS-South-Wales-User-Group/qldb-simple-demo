@@ -19,6 +19,7 @@ provider:
   memorySize: 512
   stage: ${opt:stage, 'dev'}
   region: eu-west-1
+  logRetentionInDays: 7 # Set the default RetentionInDays for a CloudWatch LogGroup
   tracing:
     apiGateway: true
     lambda: true # Optional, can be true (true equals 'Active'), 'Active' or 'PassThrough'
@@ -108,7 +109,6 @@ functions:
       INDEX_NAME_2: Email
       INDEX_NAME_3: Telephone
 
-
 resources:
   Resources:
     qldbGuideLedger:
@@ -134,4 +134,4 @@ resources:
       DependsOn: qldbTable
       Properties:
         ServiceToken: !GetAtt CreateIndexLambdaFunction.Arn
-        Version: 1.0  #change this to force redeploy
+        Version: 1.0  #change this to force redeploy      

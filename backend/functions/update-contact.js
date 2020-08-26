@@ -8,12 +8,12 @@ const LicenceIntegrityError = require('./lib/LicenceIntegrityError');
 const dateFormat = require('dateformat');
 
 module.exports.handler = async (event) => {
-    const { Telephone, Postcode, Email, Event } = JSON.parse(event.body);
-    Log.debug(`In the update contact handler with Telephone ${Telephone} Postcode ${Postcode} Email ${Email} and event ${Event}`);
-    Event.eventDate = dateFormat(new Date(), "isoDateTime");
+    const { telephone, postcode, email, eventInfo } = JSON.parse(event.body);
+    Log.debug(`In the update contact handler with telephone ${telephone} postcode ${postcode} Email ${email} and eventInfo ${eventInfo}`);
+    eventInfo.eventDate = dateFormat(new Date(), "isoDateTime");
 
     try {
-        const response = await updateContact(Telephone, Postcode, Email, Event);
+        const response = await updateContact(telephone, postcode, email, eventInfo);
         return {
             statusCode: 201,
             body: JSON.stringify(response)

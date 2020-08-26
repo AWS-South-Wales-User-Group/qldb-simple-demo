@@ -19,17 +19,19 @@ Fundamental rewrite to a Bicycle Licence application that handles a number of ev
 * Create Licence
 * Update Licence
 * Update Contact
-* Get Contact
+* Delete Licence
+* Get Licence
 
 ### Create Licence
 Create Licence is an HTTP POST using the following JSON
 
 ```
 {
-	"Name" : "name",
-	"Email": "qldb@qldb.com",
-	"Telephone" : "01345456",
-	"Postcode": "AB12ABC"
+	"firstName" : "firstName",
+	"lastName" : "lastName",
+	"email": "qldb@qldb.com",
+	"telephone" : "01345456",
+	"postcode": "AB12ABC"
 }
 ```
 
@@ -38,8 +40,8 @@ Update Licence is an HTTP PUT using the following JSON format
 
 ```
 {
-	"Email" : "qldb@qldb.com",
-	"Event": {
+	"email" : "qldb@qldb.com",
+	"eventInfo": {
 		"eventName": "PenaltyPointsAdded",
 		"eventDescription": "Speeding in a 30 Zone",
 		"penaltyPoints": 3
@@ -52,12 +54,21 @@ Update Contact is an HTTP PUT using the following JSON format. It allows you to 
 
 ```
 {
-	"Email" : "qldb@qldb.com",
-	"Telephone": "01367893",
-	"Event": {
+	"email" : "qldb@qldb.com",
+	"telephone": "01367893",
+	"eventInfo": {
 		"eventName": "ContactDetailsChanged",
 		"eventDescription": "Telephone number updated"
 	}
+}
+```
+
+### Delete Licence
+Delete Licence is an HTTP DELETE using the following JSON format
+
+```
+{
+	"licenceId" : "licenceId"
 }
 ```
 

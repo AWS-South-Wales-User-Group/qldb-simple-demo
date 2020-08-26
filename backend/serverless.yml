@@ -41,13 +41,15 @@ plugins:
   - serverless-iam-roles-per-function
   - serverless-pseudo-parameters
   - serverless-webpack
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
 
 custom:
+  documentation: ${file(qldb-demo.doc.yml):documentation}
   webpack:
     webpackConfig: 'webpack.config.js'   # Name of webpack configuration file
     includeModules: false   # Node modules configuration for packaging
     packager: 'npm'   # Packager that will be used to package your external modules
-  
 
 functions:
   createLicence:
@@ -57,6 +59,23 @@ functions:
       - http:
           path: /licences
           method: post
+          documentation:
+            summary: "Create Licence"
+            description: "Creates a new bicycle licence"
+            requestModels:
+              application/json: CreateLicenceRequest
+            methodResponses:
+              - statusCode: '201'
+                responseBody:
+                  description: "Response from Create Licence"
+                responseModels:
+                  application/json: CreateLicenceResponse
+              - statusCode: '500'
+                responseBody:
+                  description: "Error message"
+                responseModels:
+                  application/json: StandardApiError
+          reqValidatorName: RequestValidator
 
   updateLicence:
     name: update-licence-${self:provider.stage}
@@ -135,3 +154,20 @@ resources:
       Properties:
         ServiceToken: !GetAtt CreateIndexLambdaFunction.Arn
         Version: 1.0  #change this to force redeploy      
+
+    RequestValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'req-validator'
+        RestApiId: !Ref ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: true
+
+    GatewayResponse:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseType: BAD_REQUEST_BODY
+        ResponseTemplates:
+          'application/json': "{\"status\":\"400\", \"title\":\"Invalid Request\", \"detail\": \"$context.error.validationErrorString\"}"
+        RestApiId: !Ref ApiGatewayRestApi
+        StatusCode: '400'

@@ -8,11 +8,11 @@ const LicenceIntegrityError = require('./lib/LicenceIntegrityError');
 
 
 module.exports.handler = async (event) => {
-    const { LicenceId } = JSON.parse(event.body);
-    Log.debug(`In the delete licence handler for licenceid ${LicenceId}`);
+    const { licenceId } = JSON.parse(event.body);
+    Log.debug(`In the delete licence handler for licenceid ${licenceId}`);
 
     try {
-        const response = await deleteLicence(LicenceId);
+        const response = await deleteLicence(licenceId);
         const message = JSON.parse(response);
 
         return {

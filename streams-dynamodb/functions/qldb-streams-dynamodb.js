@@ -87,9 +87,9 @@ async function processIon(ionRecord) {
     Log.debug(`No data section so handle as a delete`);
     await deleteLicence(id);
   } else {
-    const points = ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints);
+    const points = ion.dumpText(ionRecord.payload.revision.data.penaltyPoints);
     const postcode = ion
-      .dumpText(ionRecord.payload.revision.data.Postcode)
+      .dumpText(ionRecord.payload.revision.data.postcode)
       .replace(/['"]+/g, "");
 
     Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}`);

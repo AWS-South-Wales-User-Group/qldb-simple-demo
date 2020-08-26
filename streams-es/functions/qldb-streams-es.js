@@ -89,29 +89,33 @@ async function processIon(ionRecord) {
     console.log(`RESPONSE: ` + JSON.stringify(response));
 
   } else {
-    const points = parseInt(ion.dumpText(ionRecord.payload.revision.data.PenaltyPoints));
+    const points = parseInt(ion.dumpText(ionRecord.payload.revision.data.penaltyPoints));
     const postcode = ion
-      .dumpText(ionRecord.payload.revision.data.Postcode)
+      .dumpText(ionRecord.payload.revision.data.postcode)
       .replace(/['"]+/g, "");
 
     const licenceId = ion
-      .dumpText(ionRecord.payload.revision.data.LicenceId)
+      .dumpText(ionRecord.payload.revision.data.licenceId)
       .replace(/['"]+/g, "");
 
-    const name = ion
-      .dumpText(ionRecord.payload.revision.data.Name)
+    const firstName = ion
+      .dumpText(ionRecord.payload.revision.data.firstName)
+      .replace(/['"]+/g, "");
+
+    const lastName = ion
+      .dumpText(ionRecord.payload.revision.data.lastName)
       .replace(/['"]+/g, "");
 
     
-    Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}, licenceId: ${licenceId}, name: ${name}
-    }`);
+    Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}, licenceId: ${licenceId}, firstName: ${firstName}, lastName: ${lastName}}`);
 
     const doc = {
       "licenceId": licenceId,
       "points": points,
       "postcode": postcode,
       "version": version,
-      "name": name
+      "firstName": firstName,
+      "lastName": lastName
     };
     console.log('About to create/update a record in elasticsearch');
     response = await sendRequest({ 

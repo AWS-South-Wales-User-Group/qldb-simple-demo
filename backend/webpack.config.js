@@ -6,8 +6,8 @@ module.exports = {
     'functions/update-licence': './functions/update-licence.js',
     'functions/update-contact': './functions/update-contact.js',
     'functions/qldbIndex': './functions/qldbIndex.js',
-    'functions/qldbTable': './functions/qldbTable.js'
+    'functions/qldbTable': './functions/qldbTable.js',
   },
   mode: 'production',
-  target: 'node'
-}
+  target: 'node',
+};

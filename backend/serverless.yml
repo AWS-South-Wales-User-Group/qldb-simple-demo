@@ -162,7 +162,7 @@ functions:
                   application/json: DeleteLicenceResponse
               - statusCode: '400'
                 responseBody:
-                  description: "Licence Integrity Error"
+                  description: "Licence Not Found Error"
                 responseModels:
                   application/json: StandardApiError    
               - statusCode: '500'

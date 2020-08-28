@@ -1,5 +1,5 @@
 documentation:
-  version: "0.17"
+  version: "0.20"
   title: 'QLDB Simple Demo API'
   description: 'Documentation of the APIs for the QLDB demo application'
   models:
@@ -137,6 +137,27 @@ documentation:
           response:
             type: string
 
+    - name: DeleteLicenceRequest
+      description: 'Delete Licence request model'
+      contentType: 'application/json'
+      schema:
+        $schema: 'http://json-schema.org/draft/2019-09/schema#'
+        required:
+          - licenceId
+        properties:
+          licenceId:
+            type: string
+            
+    - name: DeleteLicenceResponse
+      description: 'Update Contact response model'
+      contentType: 'application/json'
+      schema:
+        $schema: 'http://json-schema.org/draft/2019-09/schema#'
+        required:
+          - response
+        properties:
+          response:
+            type: string
 
     - name: GetLicenceResponse
       description: 'Get Licence response model'

@@ -307,7 +307,7 @@ const deleteLicence = async (id) => {
             throw new LicenceNotFoundError(400, 'Licence Not Found Error', `Licence record with LicenceId ${id} does not exist`);
         } else {
             const updateResult = await deleteLicenceRecordById(txn, id);
-            licence = `{"Response": "Licence record deleted"}`;
+            licence = `{"response": "Licence record deleted"}`;
         }
     }, () => Log.info("Retrying due to OCC conflict..."));
     return licence;

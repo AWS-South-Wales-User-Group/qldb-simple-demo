@@ -16,7 +16,7 @@ module.exports.handler = async (event) => {
     try {
         const response = await updateLicence(email, eventInfo);
         return {
-            statusCode: 201,
+            statusCode: 200,
             body: JSON.stringify(response)
         };
     } catch (error) {

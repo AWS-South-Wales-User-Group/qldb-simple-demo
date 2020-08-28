@@ -1,5 +1,5 @@
 documentation:
-  version: "0.1"
+  version: "0.17"
   title: 'QLDB Simple Demo API'
   description: 'Documentation of the APIs for the QLDB demo application'
   models:
@@ -7,6 +7,7 @@ documentation:
       description: 'Create Licence request model'
       contentType: 'application/json'
       schema:
+        $schema: 'http://json-schema.org/draft/2019-09/schema#'
         required:
           - firstName
           - lastName
@@ -27,6 +28,7 @@ documentation:
       description: 'Create Licence response model'
       contentType: 'application/json'
       schema:
+        $schema: 'http://json-schema.org/draft/2019-09/schema#'
         required:
           - guid
           - licenceId
@@ -54,11 +56,144 @@ documentation:
           postcode:
             type: string
 
+
+    - name: UpdateLicenceRequest
+      description: 'Update Licence request model'
+      contentType: 'application/json'
+      schema:
+        $schema: 'http://json-schema.org/draft/2019-09/schema#'
+        required:
+          - email
+          - eventInfo
+        properties:
+          email:
+            type: string
+          eventInfo:
+            type: object
+            required:
+              - eventName
+              - eventDescription
+              - penaltyPoints
+            properties:
+              eventName:
+                type: string
+              eventDescription:
+                type: string
+              penaltyPoints:
+                type: integer
+
+    - name: UpdateLicenceResponse
+      description: 'Update Licence response model'
+      contentType: 'application/json'
+      schema:
+        $schema: 'http://json-schema.org/draft/2019-09/schema#'
+        required:
+          - email
+          - updatedPenaltyPoints
+        properties:
+          email:
+            type: string
+          updatedPenaltyPoints:
+            type: integer
+
+
+    - name: UpdateContactRequest
+      description: 'Update Contact request model'
+      contentType: 'application/json'
+      schema:
+        $schema: 'http://json-schema.org/draft/2019-09/schema#'
+        required:
+          - email
+          - eventInfo
+        properties:
+          email:
+            type: string
+          telephone:
+            type: string
+          postcode:
+            type: string
+          eventInfo:
+            type: object
+            required:
+              - eventName
+              - eventDescription
+            properties:
+              eventName:
+                type: string
+              eventDescription:
+                type: string
+      
+    - name: UpdateContactResponse
+      description: 'Update Contact response model'
+      contentType: 'application/json'
+      schema:
+        $schema: 'http://json-schema.org/draft/2019-09/schema#'
+        required:
+          - email
+          - response
+        properties:
+          email:
+            type: string
+          response:
+            type: string
+
+
+    - name: GetLicenceResponse
+      description: 'Get Licence response model'
+      contentType: 'application/json'
+      schema:
+        $schema: 'http://json-schema.org/draft/2019-09/schema#'
+        required:
+          - firstName
+          - lastName
+          - email
+          - telephone
+          - postcode
+          - guid
+          - licenceId
+          - penaltyPoints
+          - events
+        properties:
+          firstName:
+            type: string
+          lastName:
+            type: string
+          email:
+            type: string
+          telephone:
+            type: string
+          postcode:
+            type: string
+          guid:
+            type: string
+          licenceId:
+            type: string
+          penaltyPoints:
+            type: integer
+          events:
+            type: array
+            description: 'Array of events against the licence'
+            items:
+              type: object
+              required:
+                - eventName
+              properties:
+                eventName:
+                  type: string
+                eventDescription:
+                  type: string
+                penaltyPoints:
+                  type: integer
+                eventDate:
+                  type: string
+                  format: date-time
+
+
     - name: 'StandardApiError'
       description: 'Nested error for StandardApiErrors'
       contentType: 'application/json'
       schema:
-        '$schema': http://json-schema.org/draft-04/schema#
+        '$schema': 'http://json-schema.org/draft/2019-09/schema#'
         type: object
         properties:
           status:

@@ -56,9 +56,10 @@ Update Contact is an HTTP PUT using the following JSON format. It allows you to 
 {
 	"email" : "qldb@qldb.com",
 	"telephone": "01367893",
+	"postcode": "AB12CDE"
 	"eventInfo": {
 		"eventName": "ContactDetailsChanged",
-		"eventDescription": "Telephone number updated"
+		"eventDescription": "Telephone number and postcode updated"
 	}
 }
 ```

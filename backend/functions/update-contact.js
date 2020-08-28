@@ -9,7 +9,7 @@ const dateFormat = require('dateformat');
 
 module.exports.handler = async (event) => {
     const { telephone, postcode, email, eventInfo } = JSON.parse(event.body);
-    Log.debug(`In the update contact handler with telephone ${telephone} postcode ${postcode} Email ${email} and eventInfo ${eventInfo}`);
+    Log.debug(`In the update contact handler with: telephone ${telephone} postcode ${postcode} Email ${email} and eventInfo ${eventInfo}`);
     eventInfo.eventDate = dateFormat(new Date(), "isoDateTime");
 
     try {

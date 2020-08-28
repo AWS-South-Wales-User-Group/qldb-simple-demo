@@ -10,7 +10,7 @@ const dateFormat = require('dateformat');
 
 module.exports.handler = async (event) => {
     const { firstName, lastName, email, telephone, postcode } = JSON.parse(event.body);
-    Log.debug(`In the create licence handler with first name ${firstName} last name ${lastName} email ${email} telephone ${telephone} and postcode ${postcode}`);
+    Log.debug(`In the create licence handler with: first name ${firstName} last name ${lastName} email ${email} telephone ${telephone} and postcode ${postcode}`);
 
     try {
         const event = [{"eventName": "LicenceHolderCreated", "eventDate": dateFormat(new Date(), "isoDateTime")}];

@@ -9,14 +9,14 @@ const dateFormat = require('dateformat');
 
 
 module.exports.handler = async (event) => {
-    const { Email, Event } = JSON.parse(event.body);
-    Log.debug(`In the update licence handler with Email ${Email} and event ${Event}`);
-    Event.eventDate = dateFormat(new Date(), "isoDateTime");
+    const { email, eventInfo } = JSON.parse(event.body);
+    Log.debug(`In the update licence handler with email ${email} and eventInfo ${eventInfo}`);
+    eventInfo.eventDate = dateFormat(new Date(), "isoDateTime");
 
     try {
-        const response = await updateLicence(Email, Event);
+        const response = await updateLicence(email, eventInfo);
         return {
-            statusCode: 201,
+            statusCode: 200,
             body: JSON.stringify(response)
         };
     } catch (error) {

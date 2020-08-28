@@ -41,13 +41,15 @@ plugins:
   - serverless-iam-roles-per-function
   - serverless-pseudo-parameters
   - serverless-webpack
+  - serverless-reqvalidator-plugin
+  - serverless-aws-documentation
 
 custom:
+  documentation: ${file(qldb-demo.doc.yml):documentation}
   webpack:
     webpackConfig: 'webpack.config.js'   # Name of webpack configuration file
     includeModules: false   # Node modules configuration for packaging
     packager: 'npm'   # Packager that will be used to package your external modules
-  
 
 functions:
   createLicence:
@@ -57,6 +59,28 @@ functions:
       - http:
           path: /licences
           method: post
+          documentation:
+            summary: "Create Licence"
+            description: "Creates a new bicycle licence"
+            requestModels:
+              application/json: CreateLicenceRequest
+            methodResponses:
+              - statusCode: '201'
+                responseBody:
+                  description: "Response from Create Licence"
+                responseModels:
+                  application/json: CreateLicenceResponse
+              - statusCode: '400'
+                responseBody:
+                  description: "Licence Integrity Error"
+                responseModels:
+                  application/json: StandardApiError  
+              - statusCode: '500'
+                responseBody:
+                  description: "Error message"
+                responseModels:
+                  application/json: StandardApiError
+          reqValidatorName: RequestValidator
 
   updateLicence:
     name: update-licence-${self:provider.stage}
@@ -65,6 +89,28 @@ functions:
       - http:
           path: /licences
           method: put
+          documentation:
+            summary: "Update Licence"
+            description: "Updates a bicycle licence"
+            requestModels:
+              application/json: UpdateLicenceRequest
+            methodResponses:
+              - statusCode: '200'
+                responseBody:
+                  description: "Response from Update Licence"
+                responseModels:
+                  application/json: UpdateLicenceResponse
+              - statusCode: '400'
+                responseBody:
+                  description: "Licence Integrity Error"
+                responseModels:
+                  application/json: StandardApiError    
+              - statusCode: '500'
+                responseBody:
+                  description: "Error message"
+                responseModels:
+                  application/json: StandardApiError
+          reqValidatorName: RequestValidator
 
   updateContact:
     name: update-contact-${self:provider.stage}
@@ -73,6 +119,28 @@ functions:
       - http:
           path: /licences/contact
           method: put
+          documentation:
+            summary: "Update Contact"
+            description: "Updates contact details on a bicycle licence"
+            requestModels:
+              application/json: UpdateContactRequest
+            methodResponses:
+              - statusCode: '200'
+                responseBody:
+                  description: "Response from Update Licence"
+                responseModels:
+                  application/json: UpdateContactResponse
+              - statusCode: '400'
+                responseBody:
+                  description: "Licence Integrity Error"
+                responseModels:
+                  application/json: StandardApiError    
+              - statusCode: '500'
+                responseBody:
+                  description: "Error message"
+                responseModels:
+                  application/json: StandardApiError
+          reqValidatorName: RequestValidator
 
   deleteLicence:
     name: delete-licence-${self:provider.stage}
@@ -81,7 +149,29 @@ functions:
       - http:
           path: /licences
           method: delete
-    
+          documentation:
+            summary: "Delete Licence"
+            description: "Deletes a bicycle licence"
+            requestModels:
+              application/json: DeleteLicenceRequest
+            methodResponses:
+              - statusCode: '200'
+                responseBody:
+                  description: "Response from Delete Licence"
+                responseModels:
+                  application/json: DeleteLicenceResponse
+              - statusCode: '400'
+                responseBody:
+                  description: "Licence Not Found Error"
+                responseModels:
+                  application/json: StandardApiError    
+              - statusCode: '500'
+                responseBody:
+                  description: "Error message"
+                responseModels:
+                  application/json: StandardApiError
+          reqValidatorName: RequestValidator
+
   getLicence:
     name: get-licence-${self:provider.stage}
     handler: functions/get-licence.handler
@@ -89,7 +179,32 @@ functions:
       - http:
           path: /licences/{licenceid}
           method: get
-
+          documentation:
+            summary: "Get Licence"
+            description: "Retrieves licence details"
+            pathParams:
+              - 
+                name: "licenceid"
+                description: "ID of the licence to retrieve"
+                required: true
+            methodResponses:
+              - statusCode: "200"
+                responseBody:
+                  description: "Bicycle licence response"
+                responseModels:
+                  application/json: GetLicenceResponse
+              - statusCode: '400'
+                responseBody:
+                  description: "Licence Not Found Error"
+                responseModels:
+                  application/json: StandardApiError    
+              - statusCode: '500'
+                responseBody:
+                  description: "Error message"
+                responseModels:
+                  application/json: StandardApiError
+            reqValidatorName: RequestValidator
+  
   createTable:
     name: qldb-demo-table-${self:provider.stage}
     handler: functions/qldbTable.handler
@@ -135,3 +250,20 @@ resources:
       Properties:
         ServiceToken: !GetAtt CreateIndexLambdaFunction.Arn
         Version: 1.0  #change this to force redeploy      
+
+    RequestValidator:
+      Type: AWS::ApiGateway::RequestValidator
+      Properties:
+        Name: 'req-validator'
+        RestApiId: !Ref ApiGatewayRestApi
+        ValidateRequestBody: true
+        ValidateRequestParameters: true
+
+    GatewayResponse:
+      Type: AWS::ApiGateway::GatewayResponse
+      Properties:
+        ResponseType: BAD_REQUEST_BODY
+        ResponseTemplates:
+          'application/json': "{\"status\":\"400\", \"title\":\"Invalid Request\", \"detail\": \"$context.error.validationErrorString\"}"
+        RestApiId: !Ref ApiGatewayRestApi
+        StatusCode: '400'

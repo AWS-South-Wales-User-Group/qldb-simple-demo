@@ -4,23 +4,21 @@
 
 const { deleteLicence } = require('./helper/licence');
 const Log = require('@dazn/lambda-powertools-logger');
-const LicenceIntegrityError = require('./lib/LicenceIntegrityError'); 
-
+const LicenceNotFoundError = require('./lib/LicenceNotFoundError'); 
 
 module.exports.handler = async (event) => {
-    const { LicenceId } = JSON.parse(event.body);
-    Log.debug(`In the delete licence handler for licenceid ${LicenceId}`);
+    const { licenceId } = JSON.parse(event.body);
+    Log.debug(`In the delete licence handler for licenceid ${licenceId}`);
 
     try {
-        const response = await deleteLicence(LicenceId);
+        const response = await deleteLicence(licenceId);
         const message = JSON.parse(response);
-
         return {
             statusCode: 201,
             body: JSON.stringify(message)
         };
     } catch (error) {
-        if (error instanceof LicenceIntegrityError) {
+        if (error instanceof LicenceNotFoundError) {
             return error.getHttpResponse();
         } else {
             Log.error('Error returned: ' + error);

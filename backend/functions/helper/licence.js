@@ -228,18 +228,14 @@ const updateContact = async (telephone, postcode, email, eventInfo) => {
       const { events } = newLicence;
       events.unshift(eventInfo);
 
-      let newTelephone;
+      let newTelephone = telephone;
       if (telephone === undefined) {
         newTelephone = newLicence.telephone;
-      } else {
-        newTelephone = null;
       }
 
-      let newPostcode;
+      let newPostcode = postcode;
       if (postcode === undefined) {
         newPostcode = newLicence.postcode;
-      } else {
-        newPostcode = null;
       }
 
       await addContactUpdatedEvent(txn, newTelephone, newPostcode, events, email);

@@ -10,32 +10,24 @@ AWSXRay.captureAWS(require('aws-sdk'));
 
 const { TABLE_NAME } = process.env;
 
-const createLicence = async (id, points, postcode) => {
-  Log.debug('In createLicence function');
-  const params = {
-    TableName: TABLE_NAME,
-    Item: {
-      pk: id,
-      penaltyPoints: points,
-      postcode,
-    },
-  };
-  await dynamodb.put(params)
-    .promise()
-    .then(() => Log.debug('PutItem succeeded'))
-    .catch((err) => Log.debug(`Unable to create licence: ${id}. Error JSON: ${JSON.stringify(err, null, 2)}`));
-};
-
-const deleteLicence = async (id) => {
+const deleteLicence = async (id, version) => {
   Log.debug('In deleteLicence function');
+
   const params = {
     TableName: TABLE_NAME,
     Key: { pk: id },
+    UpdateExpression: 'set version=:version, isDeleted=:isDeleted',
+    ExpressionAttributeValues: {
+      ':version': version,
+      ':isDeleted': true,
+    },
+    ConditionExpression: 'attribute_not_exists(id) OR version <= :version',
   };
-  await dynamodb.delete(params)
+
+  await dynamodb.update(params)
     .promise()
-    .then(() => Log.debug('DeleteItem succeeded'))
-    .catch((err) => Log.debug(`Unable to delete licence: ${id}. Error JSON: ${JSON.stringify(err, null, 2)}`));
+    .then(() => Log.debug('UpdateItem succeeded'))
+    .catch((err) => Log.debug(`Unable to update licence: ${id}. Error JSON: ${JSON.stringify(err, null, 2)}`));
 };
 
 const getLicence = async (id) => {
@@ -51,16 +43,18 @@ const getLicence = async (id) => {
   };
 };
 
-const updateLicence = async (id, points, postcode) => {
+const updateLicence = async (id, points, postcode, version) => {
   Log.debug('In updateLicence function');
   const params = {
     TableName: TABLE_NAME,
     Key: { pk: id },
-    UpdateExpression: 'set penaltyPoints=:points, postcode=:code',
+    UpdateExpression: 'set penaltyPoints=:points, postcode=:code, version=:version',
     ExpressionAttributeValues: {
       ':points': points,
       ':code': postcode,
+      ':version': version,
     },
+    ConditionExpression: 'attribute_not_exists(id) OR version <= :version',
   };
 
   await dynamodb.update(params)
@@ -70,7 +64,6 @@ const updateLicence = async (id, points, postcode) => {
 };
 
 module.exports = {
-  createLicence,
   deleteLicence,
   updateLicence,
   getLicence,

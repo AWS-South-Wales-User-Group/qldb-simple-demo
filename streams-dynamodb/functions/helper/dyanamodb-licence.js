@@ -11,7 +11,7 @@ AWSXRay.captureAWS(require('aws-sdk'));
 const { TABLE_NAME } = process.env;
 
 const deleteLicence = async (id, version) => {
-  Log.debug('In deleteLicence function');
+  Log.debug(`In deleteLicence function with id ${id} and version ${version}`);
 
   const params = {
     TableName: TABLE_NAME,
@@ -31,7 +31,7 @@ const deleteLicence = async (id, version) => {
 };
 
 const getLicence = async (id) => {
-  Log.debug('In getLicence function');
+  Log.debug(`In getLicence function with id ${id}`);
   const licence = await dynamodb.get({
     TableName: TABLE_NAME,
     Key: { pk: id },
@@ -44,7 +44,7 @@ const getLicence = async (id) => {
 };
 
 const updateLicence = async (id, points, postcode, version) => {
-  Log.debug('In updateLicence function');
+  Log.debug(`In updateLicence function with id ${id} points ${points} postcode ${postcode} and version ${version}`);
   const params = {
     TableName: TABLE_NAME,
     Key: { pk: id },

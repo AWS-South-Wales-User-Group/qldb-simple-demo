@@ -5,7 +5,7 @@
 const Log = require('@dazn/lambda-powertools-logger');
 const deagg = require('aws-kinesis-agg');
 const ion = require('ion-js');
-const { createLicence, deleteLicence, updateLicence } = require('./helper/dyanamodb-licence');
+const { deleteLicence, updateLicence } = require('./helper/dyanamodb-licence');
 
 const computeChecksums = true;
 const REVISION_DETAILS = 'REVISION_DETAILS';
@@ -42,7 +42,7 @@ async function processIon(ionRecord) {
   // Check to see if the data section exists.
   if (ionRecord.payload.revision.data == null) {
     Log.debug('No data section so handle as a delete');
-    await deleteLicence(id);
+    await deleteLicence(id, version);
   } else {
     const points = ion.dumpText(ionRecord.payload.revision.data.penaltyPoints);
     const postcode = ion
@@ -50,13 +50,9 @@ async function processIon(ionRecord) {
       .replace(/['"]+/g, '');
 
     Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}`);
-    // if the first version then we need to do a create
-    if (version === 0) {
-      await createLicence(id, points, postcode);
-    } else {
-      // Else it is an update
-      await updateLicence(id, points, postcode);
-    }
+
+    // do an upsert so it doesn't matter if it is the initial version or not
+    await updateLicence(id, points, postcode, version);
   }
 }
 

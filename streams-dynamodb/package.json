@@ -23,6 +23,9 @@
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.0",
     "serverless-iam-roles-per-function": "^2.0.2",
-    "serverless-pseudo-parameters": "^2.5.0"
+    "serverless-pseudo-parameters": "^2.5.0",
+    "serverless-webpack": "^5.3.4",
+    "webpack": "^4.44.1",
+    "webpack-node-externals": "^2.5.2"
   }
 }

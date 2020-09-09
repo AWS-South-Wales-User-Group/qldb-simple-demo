@@ -1,7 +1,6 @@
 /*
  * Lambda function that implements the get licence functionality
  */
-
 const Log = require('@dazn/lambda-powertools-logger');
 const { getLicence } = require('./helper/licence');
 const LicenceNotFoundError = require('./lib/LicenceNotFoundError');

@@ -1,7 +1,6 @@
 /*
  * Lambda function that implements the delete licence functionality
  */
-
 const Log = require('@dazn/lambda-powertools-logger');
 const { deleteLicence } = require('./helper/licence');
 const LicenceNotFoundError = require('./lib/LicenceNotFoundError');

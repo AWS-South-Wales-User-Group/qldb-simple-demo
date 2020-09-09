@@ -1,7 +1,6 @@
 /*
  * Lambda function that implements the create licence functionality
  */
-
 const Log = require('@dazn/lambda-powertools-logger');
 const dateFormat = require('dateformat');
 const { createLicence } = require('./helper/licence');

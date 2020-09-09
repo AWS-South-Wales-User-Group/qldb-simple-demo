@@ -2,7 +2,6 @@
  * Lambda function used as a custom resource to create the indexes
  * in QLDB using CloudFormation
  */
-
 const Log = require('@dazn/lambda-powertools-logger');
 const response = require('cfn-response-promise');
 const { getQldbDriver } = require('./helper/ConnectToLedger');
@@ -18,7 +17,7 @@ async function createIndex(txn, tableName, indexAttribute) {
 module.exports.handler = async (event, context) => {
   try {
     if (event.RequestType === 'Create') {
-      Log.debug(`QLDB Index request received:\n${JSON.stringify(event, null, 2)}`);
+      Log.debug(`QLDB Index create request received:\n${JSON.stringify(event, null, 2)}`);
       try {
         const qldbDriver = await getQldbDriver();
         await qldbDriver.executeLambda(async (txn) => {

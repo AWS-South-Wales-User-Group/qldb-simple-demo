@@ -95,7 +95,7 @@ async function processRecords(records) {
       const ionRecord = ion.load(payload);
 
       // Only process records where the record type is REVISION_DETAILS
-      if (JSON.parse(ion.dumpText(ionRecord.recordType)) !== REVISION_DETAILS) {
+      if (ion.dumpText(ionRecord.recordType) !== REVISION_DETAILS) {
         Log.debug(`Skipping record of type ${ion.dumpPrettyText(ionRecord.recordType)} with payload 
           ${ion.dumpPrettyText(ionRecord.payload)}`);
       } else {

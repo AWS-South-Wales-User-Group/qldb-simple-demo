@@ -1,5 +1,5 @@
 documentation:
-  version: "0.20"
+  version: "0.22"
   title: 'QLDB Simple Demo API'
   description: 'Documentation of the APIs for the QLDB demo application'
   models:
@@ -15,13 +15,15 @@ documentation:
           - telephone
           - postcode
         properties:
-          Name:
+          firstName:
             type: string
-          Email:
+          lastName:
             type: string
-          Telephone:
+          email:
             type: string
-          Postcode:
+          telephone:
+            type: string
+          postcode:
             type: string
 
     - name: CreateLicenceResponse

@@ -8,7 +8,7 @@ const ion = require('ion-js');
 const { deleteLicence, updateLicence } = require('./helper/dyanamodb-licence');
 
 const computeChecksums = true;
-const REVISION_DETAILS = 'REVISION_DETAILS';
+const REVISION_DETAILS = "REVISION_DETAILS";
 
 /**
  * Promisified function to deaggregate Kinesis record
@@ -33,6 +33,7 @@ const promiseDeaggregate = (record) => new Promise((resolve, reject) => {
 async function processIon(ionRecord) {
   // retrieve the version and id from the metadata section of the message
   const version = ion.dumpText(ionRecord.payload.revision.metadata.version);
+
   const id = ion
     .dumpText(ionRecord.payload.revision.metadata.id)
     .replace(/['"]+/g, '');
@@ -71,7 +72,7 @@ async function processRecords(records) {
       const ionRecord = ion.load(payload);
 
       // Only process records where the record type is REVISION_DETAILS
-      if (ionRecord.recordType !== REVISION_DETAILS) {
+      if (JSON.parse(ion.dumpText(ionRecord.recordType)) !== REVISION_DETAILS) {
         Log.debug(`Skipping record of type ${ion.dumpPrettyText(ionRecord.recordType)} with payload 
           ${ion.dumpPrettyText(ionRecord.payload)}`);
       } else {

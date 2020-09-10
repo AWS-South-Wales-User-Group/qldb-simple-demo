@@ -24,10 +24,12 @@ const deleteLicence = async (id, version) => {
     ConditionExpression: 'attribute_not_exists(id) OR version <= :version',
   };
 
-  await dynamodb.update(params)
-    .promise()
-    .then(() => Log.debug('UpdateItem succeeded'))
-    .catch((err) => Log.debug(`Unable to update licence: ${id}. Error JSON: ${JSON.stringify(err, null, 2)}`));
+  try {
+    await dynamodb.update(params).promise();
+    Log.debug(`Successful deleted id ${id} with version ${version}`);    
+  } catch(err) {
+    Log.debug(`Unable to update licence: ${id}. Error JSON: ${JSON.stringify(err, null, 2)}`);
+  }
 };
 
 const getLicence = async (id) => {
@@ -57,10 +59,12 @@ const updateLicence = async (id, points, postcode, version) => {
     ConditionExpression: 'attribute_not_exists(id) OR version <= :version',
   };
 
-  await dynamodb.update(params)
-    .promise()
-    .then(() => Log.debug('UpdateItem succeeded'))
-    .catch((err) => Log.debug(`Unable to update licence: ${id}. Error JSON: ${JSON.stringify(err, null, 2)}`));
+  try {
+    await dynamodb.update(params).promise();
+    Log.debug(`Successful updated id ${id} with points ${points} postcode ${postcode} and version ${version}`);    
+  } catch(err) {
+    Log.debug(`Unable to update licence: ${id}. Error JSON: ${JSON.stringify(err, null, 2)}`);
+  }
 };
 
 module.exports = {

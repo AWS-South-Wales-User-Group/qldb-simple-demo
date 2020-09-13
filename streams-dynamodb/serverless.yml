@@ -63,7 +63,7 @@ functions:
         Action:
           - "xray:PutTraceSegments"
           - "xray:PutTelemetryRecords"
-        Resource: "*" # Restrict resource to minimum required
+        Resource: "*"
   
 
 resources:
@@ -83,7 +83,7 @@ resources:
     
     bicycleLicenceLedgerTable:
       Type: AWS::DynamoDB::Table
-      DeletionPolicy: Delete # Use 'Retain' if sls deploy should not delete the table
+      DeletionPolicy: Delete
       Properties:
         TableName: QLDBBicycleLicence-${self:provider.stage}
         AttributeDefinitions:

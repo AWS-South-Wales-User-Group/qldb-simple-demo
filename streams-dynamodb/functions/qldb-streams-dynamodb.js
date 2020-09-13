@@ -32,11 +32,9 @@ const promiseDeaggregate = (record) => new Promise((resolve, reject) => {
  */
 async function processIon(ionRecord) {
   // retrieve the version and id from the metadata section of the message
-  const version = ion.dumpText(ionRecord.payload.revision.metadata.version);
+  const version = ionRecord.payload.revision.metadata.version.numberValue();
 
-  const id = ion
-    .dumpText(ionRecord.payload.revision.metadata.id)
-    .replace(/['"]+/g, '');
+  const id = ionRecord.payload.revision.metadata.id.stringValue();
 
   Log.debug(`Version ${version} and id ${id}`);
 
@@ -45,10 +43,8 @@ async function processIon(ionRecord) {
     Log.debug('No data section so handle as a delete');
     await deleteLicence(id, version);
   } else {
-    const points = ion.dumpText(ionRecord.payload.revision.data.penaltyPoints);
-    const postcode = ion
-      .dumpText(ionRecord.payload.revision.data.postcode)
-      .replace(/['"]+/g, '');
+    const points = ionRecord.payload.revision.data.penaltyPoints.numberValue();
+    const postcode = ionRecord.payload.revision.data.postcode.stringValue();
 
     Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}`);
 
@@ -72,7 +68,7 @@ async function processRecords(records) {
       const ionRecord = ion.load(payload);
 
       // Only process records where the record type is REVISION_DETAILS
-      if (JSON.parse(ion.dumpText(ionRecord.recordType)) !== REVISION_DETAILS) {
+      if (ionRecord.recordType.stringValue() !== REVISION_DETAILS) {
         Log.debug(`Skipping record of type ${ion.dumpPrettyText(ionRecord.recordType)} with payload 
           ${ion.dumpPrettyText(ionRecord.payload)}`);
       } else {

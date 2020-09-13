@@ -32,10 +32,8 @@ const promiseDeaggregate = (record) => new Promise((resolve, reject) => {
  */
 async function processIon(ionRecord) {
   // retrieve the version and id from the metadata section of the message
-  const version = parseInt(ion.dumpText(ionRecord.payload.revision.metadata.version), 10);
-  const id = ion
-    .dumpText(ionRecord.payload.revision.metadata.id)
-    .replace(/['"]+/g, '');
+  const version = ionRecord.payload.revision.metadata.version.numberValue();
+  const id = ionRecord.payload.revision.metadata.id.stringValue();
   let response;
 
   // Check to see if the data section exists.
@@ -44,22 +42,11 @@ async function processIon(ionRecord) {
     response = await sendRequest({ httpMethod: 'DELETE', requestPath: `/licence/_doc/${id}?version=${version}&version_type=external` });
     Log.debug(`RESPONSE: ${JSON.stringify(response)}`);
   } else {
-    const points = parseInt(ion.dumpText(ionRecord.payload.revision.data.penaltyPoints), 10);
-    const postcode = ion
-      .dumpText(ionRecord.payload.revision.data.postcode)
-      .replace(/['"]+/g, '');
-
-    const licenceId = ion
-      .dumpText(ionRecord.payload.revision.data.licenceId)
-      .replace(/['"]+/g, '');
-
-    const firstName = ion
-      .dumpText(ionRecord.payload.revision.data.firstName)
-      .replace(/['"]+/g, '');
-
-    const lastName = ion
-      .dumpText(ionRecord.payload.revision.data.lastName)
-      .replace(/['"]+/g, '');
+    const points = ionRecord.payload.revision.data.penaltyPoints.numberValue();
+    const postcode = ionRecord.payload.revision.data.postcode.stringValue();
+    const licenceId = ionRecord.payload.revision.data.licenceId.stringValue();
+    const firstName = ionRecord.payload.revision.data.firstName.stringValue();
+    const lastName = ionRecord.payload.revision.data.lastName.stringValue();
 
     Log.debug(`id: ${id}, points: ${points}, postcode: ${postcode}, licenceId: ${licenceId}, firstName: ${firstName}, lastName: ${lastName}}`);
 
@@ -95,9 +82,8 @@ async function processRecords(records) {
       const ionRecord = ion.load(payload);
 
       // Only process records where the record type is REVISION_DETAILS
-      if (JSON.parse(ion.dumpText(ionRecord.recordType)) !== REVISION_DETAILS) {
-        Log.debug(`Skipping record of type ${ion.dumpPrettyText(ionRecord.recordType)} with payload 
-          ${ion.dumpPrettyText(ionRecord.payload)}`);
+      if (ionRecord.recordType.stringValue() !== REVISION_DETAILS) {
+        Log.debug(`Skipping record of type ${ion.dumpPrettyText(ionRecord.recordType)}`);
       } else {
         Log.debug(`Ion Record: ${ion.dumpPrettyText(ionRecord.payload)}`);
         await processIon(ionRecord);

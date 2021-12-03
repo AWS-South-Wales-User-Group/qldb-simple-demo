@@ -21,6 +21,7 @@ module.exports.handler = async (event, context) => {
   try {
     if (event.RequestType === 'Create') {
       Log.debug('Attempting to create QLDB table');
+
       try {
         const qldbDriver = await getQldbDriver();
         await qldbDriver.executeLambda(async (txn) => {
@@ -28,8 +29,9 @@ module.exports.handler = async (event, context) => {
         }, () => Log.info('Retrying due to OCC conflict...'));
       } catch (e) {
         Log.error(`Unable to connect: ${e}`);
-        throw e;
+        await response.send(event, context, response.FAILED);
       }
+
       const responseData = { requestType: event.RequestType };
       await response.send(event, context, response.SUCCESS, responseData);
     } else if (event.RequestType === 'Delete') {

@@ -1,11 +1,13 @@
 service: qldb-simple-demo
+frameworkVersion: '2'
 
 provider:
   name: aws
-  runtime: nodejs12.x
+  runtime: nodejs14.x
   memorySize: 512
   stage: ${opt:stage, 'dev'}
   region: eu-west-1
+  lambdaHashingVersion: "20201221"
   logRetentionInDays: 7 # Set the default RetentionInDays for a CloudWatch LogGroup
   tracing:
     apiGateway: true
@@ -13,188 +15,122 @@ provider:
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED	: "1"
     LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
-  iamRoleStatements:
-    - Effect: Allow
-      Action: 
-        - qldb:SendCommand
-      Resource: arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}
-    - Effect: "Allow"
-      Action:
-        - "xray:PutTraceSegments"
-        - "xray:PutTelemetryRecords"
-      Resource: "*" # Restrict resource to minimum required
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - 'qldb:SendCommand'
+          Resource:
+            - !Sub "arn:aws:qldb:${AWS::Region}:${AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}"
+        - Effect: "Allow"
+          Action:
+            - "xray:PutTraceSegments"
+            - "xray:PutTelemetryRecords"
+          Resource: "*" # Restrict resource to minimum required
 
 plugins:
   - serverless-iam-roles-per-function
   - serverless-pseudo-parameters
-  - serverless-webpack
-  - serverless-reqvalidator-plugin
-  - serverless-aws-documentation
-
-custom:
-  documentation: ${file(qldb-demo.doc.yml):documentation}
-  webpack:
-    webpackConfig: 'webpack.config.js'   # Name of webpack configuration file
-    includeModules: false   # Node modules configuration for packaging
-    packager: 'npm'   # Packager that will be used to package your external modules
+  - serverless-esbuild
 
 functions:
   createLicence:
     name: create-licence-${self:provider.stage}
     handler: functions/create-licence.handler
+    iamRoleStatementsInherit: true
+    iamRoleStatementsName: qldb-simple-demo-createLicence
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:PartiQLInsert
+          - qldb:PartiQLSelect
+          - qldb:PartiQLUpdate
+        Resource: 
+          - "arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}/*"
     events:
       - http:
           path: /licences
           method: post
-          documentation:
-            summary: "Create Licence"
-            description: "Creates a new bicycle licence"
-            requestModels:
-              application/json: CreateLicenceRequest
-            methodResponses:
-              - statusCode: '201'
-                responseBody:
-                  description: "Response from Create Licence"
-                responseModels:
-                  application/json: CreateLicenceResponse
-              - statusCode: '400'
-                responseBody:
-                  description: "Licence Integrity Error"
-                responseModels:
-                  application/json: StandardApiError  
-              - statusCode: '500'
-                responseBody:
-                  description: "Error message"
-                responseModels:
-                  application/json: StandardApiError
-          reqValidatorName: RequestValidator
 
   updateLicence:
     name: update-licence-${self:provider.stage}
     handler: functions/update-licence.handler
+    iamRoleStatementsInherit: true
+    iamRoleStatementsName: qldb-simple-demo-updateLicence
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:PartiQLSelect
+          - qldb:PartiQLUpdate
+        Resource: 
+          - "arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}/*"
     events:
       - http:
           path: /licences
           method: put
-          documentation:
-            summary: "Update Licence"
-            description: "Updates a bicycle licence"
-            requestModels:
-              application/json: UpdateLicenceRequest
-            methodResponses:
-              - statusCode: '200'
-                responseBody:
-                  description: "Response from Update Licence"
-                responseModels:
-                  application/json: UpdateLicenceResponse
-              - statusCode: '400'
-                responseBody:
-                  description: "Licence Integrity Error"
-                responseModels:
-                  application/json: StandardApiError    
-              - statusCode: '500'
-                responseBody:
-                  description: "Error message"
-                responseModels:
-                  application/json: StandardApiError
-          reqValidatorName: RequestValidator
 
   updateContact:
     name: update-contact-${self:provider.stage}
     handler: functions/update-contact.handler
+    iamRoleStatementsInherit: true
+    iamRoleStatementsName: qldb-simple-demo-updateContact
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:PartiQLSelect
+          - qldb:PartiQLUpdate
+        Resource: 
+          - "arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}/*"
     events:
       - http:
           path: /licences/contact
           method: put
-          documentation:
-            summary: "Update Contact"
-            description: "Updates contact details on a bicycle licence"
-            requestModels:
-              application/json: UpdateContactRequest
-            methodResponses:
-              - statusCode: '200'
-                responseBody:
-                  description: "Response from Update Licence"
-                responseModels:
-                  application/json: UpdateContactResponse
-              - statusCode: '400'
-                responseBody:
-                  description: "Licence Integrity Error"
-                responseModels:
-                  application/json: StandardApiError    
-              - statusCode: '500'
-                responseBody:
-                  description: "Error message"
-                responseModels:
-                  application/json: StandardApiError
-          reqValidatorName: RequestValidator
 
   deleteLicence:
     name: delete-licence-${self:provider.stage}
     handler: functions/delete-licence.handler
+    iamRoleStatementsInherit: true
+    iamRoleStatementsName: qldb-simple-demo-deleteLicence
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:PartiQLSelect
+          - qldb:PartiQLDelete
+        Resource: 
+          - "arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}/*"
     events:
       - http:
           path: /licences
           method: delete
-          documentation:
-            summary: "Delete Licence"
-            description: "Deletes a bicycle licence"
-            requestModels:
-              application/json: DeleteLicenceRequest
-            methodResponses:
-              - statusCode: '200'
-                responseBody:
-                  description: "Response from Delete Licence"
-                responseModels:
-                  application/json: DeleteLicenceResponse
-              - statusCode: '400'
-                responseBody:
-                  description: "Licence Not Found Error"
-                responseModels:
-                  application/json: StandardApiError    
-              - statusCode: '500'
-                responseBody:
-                  description: "Error message"
-                responseModels:
-                  application/json: StandardApiError
-          reqValidatorName: RequestValidator
 
   getLicence:
     name: get-licence-${self:provider.stage}
     handler: functions/get-licence.handler
+    iamRoleStatementsInherit: true
+    iamRoleStatementsName: qldb-simple-demo-getLicence
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:PartiQLSelect
+        Resource: 
+          - "arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}/*"
     events:
       - http:
           path: /licences/{licenceid}
           method: get
-          documentation:
-            summary: "Get Licence"
-            description: "Retrieves licence details"
-            pathParams:
-              - 
-                name: "licenceid"
-                description: "ID of the licence to retrieve"
-                required: true
-            methodResponses:
-              - statusCode: "200"
-                responseBody:
-                  description: "Bicycle licence response"
-                responseModels:
-                  application/json: GetLicenceResponse
-              - statusCode: '400'
-                responseBody:
-                  description: "Licence Not Found Error"
-                responseModels:
-                  application/json: StandardApiError    
-              - statusCode: '500'
-                responseBody:
-                  description: "Error message"
-                responseModels:
-                  application/json: StandardApiError
-            reqValidatorName: RequestValidator
   
   createTable:
     name: qldb-demo-table-${self:provider.stage}
     handler: functions/qldbTable.handler
+    iamRoleStatementsInherit: true
+    iamRoleStatementsName: qldb-simple-demo-createTable
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:PartiQLCreateTable
+        Resource: 
+          - "arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}/*"
     memorySize: 256
     timeout: 6
     environment:
@@ -203,6 +139,14 @@ functions:
   createIndex:
     name: qldb-demo-index-${self:provider.stage}
     handler: functions/qldbIndex.handler
+    iamRoleStatementsInherit: true
+    iamRoleStatementsName: qldb-simple-demo-createIndex
+    iamRoleStatements:
+      - Effect: Allow
+        Action: 
+          - qldb:PartiQLCreateIndex
+        Resource: 
+          - "arn:aws:qldb:#{AWS::Region}:#{AWS::AccountId}:ledger/qldb-simple-demo-${self:provider.stage}/*"
     memorySize: 256
     timeout: 6
     environment:
@@ -213,12 +157,12 @@ functions:
 
 resources:
   Resources:
-    qldbGuideLedger:
+    qldbLedger:
       Type: AWS::QLDB::Ledger
       Properties:
         Name: qldb-simple-demo-${self:provider.stage}
         DeletionProtection: false
-        PermissionsMode: ALLOW_ALL
+        PermissionsMode: STANDARD
         Tags:
           - 
             Key: name
@@ -226,7 +170,7 @@ resources:
 
     qldbTable:
       Type: Custom::qldbTable
-      DependsOn: qldbGuideLedger
+      DependsOn: qldbLedger
       Properties:
         ServiceToken: !GetAtt CreateTableLambdaFunction.Arn
         Version: 1.0  #change this to force redeploy
@@ -238,19 +182,9 @@ resources:
         ServiceToken: !GetAtt CreateIndexLambdaFunction.Arn
         Version: 1.0  #change this to force redeploy      
 
-    RequestValidator:
-      Type: AWS::ApiGateway::RequestValidator
-      Properties:
-        Name: 'req-validator'
-        RestApiId: !Ref ApiGatewayRestApi
-        ValidateRequestBody: true
-        ValidateRequestParameters: true
-
-    GatewayResponseBody:
-      Type: AWS::ApiGateway::GatewayResponse
-      Properties:
-        ResponseType: BAD_REQUEST_BODY
-        ResponseTemplates:
-          'application/json': "{\"status\":\"400\", \"title\":\"Invalid Request\", \"detail\": \"$context.error.validationErrorString\"}"
-        RestApiId: !Ref ApiGatewayRestApi
-        StatusCode: '400'
+  Outputs:
+    qldbBicycleLicenceLedger:
+      Value:
+        Ref: qldbLedger
+      Export:
+        Name: qldb-simple-demo

@@ -1,11 +1,13 @@
 service: qldb-streams-dynamodb
+frameworkVersion: '2'
 
 provider:
   name: aws
-  runtime: nodejs12.x
+  runtime: nodejs14.x
   memorySize: 512
   stage: ${opt:stage, 'dev'}
   region: eu-west-1
+  lambdaHashingVersion: "20201221"
   tracing:
     apiGateway: true
     lambda: true # Optional, can be true (true equals 'Active'), 'Active' or 'PassThrough'
@@ -16,27 +18,12 @@ provider:
 plugins:
   - serverless-iam-roles-per-function
   - serverless-pseudo-parameters
-  - serverless-webpack
-
-custom:
-  webpack:
-    webpackConfig: 'webpack.config.js'   # Name of webpack configuration file
-    includeModules: false   # Node modules configuration for packaging
-    packager: 'npm'   # Packager that will be used to package your external modules
+  - serverless-esbuild
 
 functions:
   streamHandler:
     name: qldb-streams-dynamodb-${self:provider.stage}
     handler: functions/qldb-streams-dynamodb.handler
-    events:
-      - stream:
-          type: kinesis
-          batchSize: 1
-          startingPosition: TRIM_HORIZON
-          maximumRetryAttempts: 10
-          enabled: true
-          arn:
-            Fn::GetAtt: [licenceQldbStreamsDynamodb, Arn]
     iamRoleStatementsName: qldb-streams-dynamodb-lambda-role-${self:provider.stage}
     iamRoleStatements: # Grant privilege read from Kinesis work stream 
       - Effect: Allow 
@@ -48,7 +35,7 @@ functions:
           - kinesis:PutRecord 
           - kinesis:PutRecords 
         Resource: 
-          Fn::GetAtt: [licenceQldbStreamsDynamodb, Arn]
+          Fn::GetAtt: [LicenceQldbStreamsDynamodb, Arn]
       - Effect: Allow
         Action:
           - dynamodb:Query
@@ -58,18 +45,23 @@ functions:
           - dynamodb:UpdateItem
           - dynamodb:DeleteItem
         Resource: 
-          Fn::GetAtt: [bicycleLicenceLedgerTable, Arn]
+          Fn::GetAtt: [BicycleLicenceLedgerTable, Arn]
       - Effect: "Allow"
         Action:
           - "xray:PutTraceSegments"
           - "xray:PutTelemetryRecords"
         Resource: "*"
-  
+      - Effect: "Allow"
+        Action:
+          - "sqs:SendMessage"
+        Resource:
+          Fn::GetAtt: [StreamsFailureQueue, Arn]
+    
 
 resources:
   Resources:
 
-    licenceQldbStreamsDynamodb: 
+    LicenceQldbStreamsDynamodb: 
       Type: AWS::Kinesis::Stream
       Properties: 
         Name: QLDBBicycleLicence-dynamodb-${self:provider.stage}
@@ -81,7 +73,7 @@ resources:
         TracingConfig:
           Mode: "Active"
     
-    bicycleLicenceLedgerTable:
+    BicycleLicenceLedgerTable:
       Type: AWS::DynamoDB::Table
       DeletionPolicy: Delete
       Properties:
@@ -94,7 +86,10 @@ resources:
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
 
-    qldbStreamRole:
+    StreamsFailureQueue:
+      Type: AWS::SQS::Queue 
+
+    QldbStreamRole:
       Type: 'AWS::IAM::Role'
       Properties:
         AssumeRolePolicyDocument:
@@ -118,22 +113,36 @@ resources:
                     - 'kinesis:DescribeStream'
                     - 'kinesis:ListShards'
                   Resource:
-                    Fn::GetAtt: [licenceQldbStreamsDynamodb, Arn]
+                    Fn::GetAtt: [LicenceQldbStreamsDynamodb, Arn]
         RoleName: QLDBBicycleLicence-dynamodb-role-${self:provider.stage}
 
-    myQLDBStream:
+    MyQLDBStream:
       Type: "AWS::QLDB::Stream"
-      DependsOn: qldbStreamRole
+      DependsOn: QldbStreamRole
       Properties:
         InclusiveStartTime: "2020-05-29T00:00:00Z"
         KinesisConfiguration:
           AggregationEnabled: true
           StreamArn: 
-            Fn::GetAtt: [licenceQldbStreamsDynamodb, Arn]
-        LedgerName: qldb-simple-demo-${self:provider.stage}
+            Fn::GetAtt: [LicenceQldbStreamsDynamodb, Arn]
+        LedgerName: !ImportValue qldb-simple-demo
         RoleArn: 
-          Fn::GetAtt: [qldbStreamRole, Arn]
+          Fn::GetAtt: [QldbStreamRole, Arn]
         StreamName: QLDBBicycleLicence-dynamodb-${self:provider.stage}
         Tags:
           - Key: name
             Value: qldb-simple-demo
+
+    MyEventSourceMapping:
+      Type: AWS::Lambda::EventSourceMapping
+      Properties:
+        BatchSize: 50
+        BisectBatchOnFunctionError: true
+        DestinationConfig: 
+          OnFailure: 
+            Destination: !GetAtt StreamsFailureQueue.Arn
+        Enabled: true
+        EventSourceArn: !GetAtt LicenceQldbStreamsDynamodb.Arn
+        FunctionName: !GetAtt StreamHandlerLambdaFunction.Arn
+        MaximumRetryAttempts: 1
+        StartingPosition: "TRIM_HORIZON"

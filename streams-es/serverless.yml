@@ -24,7 +24,7 @@ functions:
     name: qldb-streams-es-${self:provider.stage}
     handler: functions/qldb-streams-es.handler
     environment:
-      ELASTICSEARCH_DOMAIN: !GetAtt ElasticSearch.DomainEndpoint
+      ELASTICSEARCH_DOMAIN: !GetAtt OpenSearch.DomainEndpoint
       REGION: "eu-west-1"
     events:
       - stream:
@@ -34,11 +34,11 @@ functions:
           maximumRetryAttempts: 10
           enabled: true
           arn: !GetAtt licenceQldbStreamsES.Arn
-    vpc:
-      securityGroupIds:
-        - "Fn::GetAtt": ElasticSecurityGroup.GroupId
-      subnetIds:
-        - Ref: ElasticSubnetA
+#    vpc:
+ #     securityGroupIds:
+  #      - !GetAtt ElasticSecurityGroup.GroupId
+   #   subnetIds:
+    #    - Ref: ElasticSubnetA
     iamRoleStatementsName: qldb-streams-es-lambda-role-${self:provider.stage}
     iamRoleStatements: # Grant privilege read from Kinesis work stream 
       - Effect: Allow 
@@ -58,7 +58,7 @@ functions:
           - es:ESHttpDelete
           - es:ESHttpGet
         Resource: 
-          - !GetAtt ElasticSearch.Arn
+          - !GetAtt OpenSearch.Arn
       - Effect: "Allow"
         Action:
           - "xray:PutTraceSegments"
@@ -68,45 +68,125 @@ functions:
 resources:
   Resources:
 
-    ElasticSearch:
-      Type: AWS::Elasticsearch::Domain
+    OSUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UsernameConfiguration:
+          CaseSensitive: false
+        AutoVerifiedAttributes:
+          - email
+        UserPoolName: !Sub qldb-demo-user-pool
+        Schema:
+          - Name: email
+            AttributeDataType: String
+            Mutable: false
+            Required: true
+          - Name: name
+            AttributeDataType: String
+            Mutable: true
+            Required: true
+
+    OSUserPoolDomain: 
+      Type: AWS::Cognito::UserPoolDomain 
+      Properties:
+        UserPoolId: !Ref OSUserPool 
+        Domain: "qldb-opensearch-demo"
+
+    OSUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: !Sub ${AWS::StackName}-client
+        # GenerateSecret: false
+        UserPoolId: !Ref OSUserPool
+
+    OSIdentityPool:
+      Type: AWS::Cognito::IdentityPool
+      Properties:
+        AllowUnauthenticatedIdentities: true
+        CognitoIdentityProviders:
+          - ClientId: !Ref OSUserPoolClient
+            ProviderName: !GetAtt OSUserPool.ProviderName
+
+    OSCognitoRole:
+      Type: 'AWS::IAM::Role'
+      Properties:
+        RoleName: 'CognitoAccessForAmazonOpenSearch'
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - es.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
+        Path: "/"
+        ManagedPolicyArns:
+          - arn:aws:iam::aws:policy/AmazonOpenSearchServiceCognitoAccess
+
+
+    OpenSearch:
+      Type: AWS::OpenSearchService::Domain
       Properties:
         DomainName: "#{AWS::StackName}"
-        ElasticsearchVersion: 7.7
-        ElasticsearchClusterConfig:
+        EngineVersion: 'OpenSearch_1.0'
+        ClusterConfig:
           DedicatedMasterEnabled: false
-          InstanceCount: "1"
-          InstanceType: r5.large.elasticsearch
+          InstanceCount: '1'
+          InstanceType: 't3.medium.search'
           ZoneAwarenessEnabled: false
+        CognitoOptions:
+          Enabled: true
+          IdentityPoolId: !Ref OSIdentityPool
+          RoleArn: !GetAtt OSCognitoRole.Arn
+          UserPoolId: !Ref OSUserPool
         EBSOptions:
           EBSEnabled: true
+          VolumeType: 'gp2'
           Iops: 0
           VolumeSize: 10
-          VolumeType: standard
-        EncryptionAtRestOptions:
-          Enabled: true
-          KmsKeyId: arn:aws:kms:${self:provider.region}:#{AWS::AccountId}:alias/aws/es
-        NodeToNodeEncryptionOptions:
-          Enabled: true
-        DomainEndpointOptions:
-          EnforceHTTPS: true
         AccessPolicies:
           Version: "2012-10-17"
           Statement:
-            - Effect: Allow
+            - 
+              Effect: Allow
               Principal:
                 AWS: "*"
               Action: es:ESHttp*
               Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*
-        VPCOptions: 
-          SubnetIds: 
-            - !Ref ElasticSubnetA 
-          SecurityGroupIds: 
-            - !Ref ElasticSecurityGroup
+#        VPCOptions: 
+ #         SecurityGroupIds: 
+  #          - !Ref ElasticSecurityGroup
+   #       SubnetIds: 
+    #        - !Ref ElasticSubnetA 
+        LogPublishingOptions:
+          ES_APPLICATION_LOGS:
+              CloudWatchLogsLogGroupArn: 'arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:/aws/opensearch/domains/opensearch-application-logs'
+              Enabled: true
+          SEARCH_SLOW_LOGS:
+              CloudWatchLogsLogGroupArn: 'arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:/aws/opensearch/domains/opensearch-slow-logs'
+              Enabled: true
+          INDEX_SLOW_LOGS:
+              CloudWatchLogsLogGroupArn: 'arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:/aws/opensearch/domains/opensearch-index-slow-logs'
+              Enabled: true
+        AdvancedOptions:
+          rest.action.multi.allow_explicit_index: true
+          override_main_response_version: true
 
-    ElasticStreamRole:
+
+#        EncryptionAtRestOptions:
+#          Enabled: true
+#          KmsKeyId: arn:aws:kms:${self:provider.region}:#{AWS::AccountId}:alias/aws/es
+#        NodeToNodeEncryptionOptions:
+#          Enabled: true
+#        DomainEndpointOptions:
+#          EnforceHTTPS: true
+
+
+    OSVPCRole:
       Type: 'AWS::IAM::Role'
       Properties:
+        Description: 'Service linked role to setup VPC connectivity'
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -118,11 +198,12 @@ resources:
                 - 'sts:AssumeRole'
         Path: /
         ManagedPolicyArns:
-          - !Ref ElasticStreamManagedPolicy
+          - !Ref OSVPCManagedPolicy
 
-    ElasticStreamManagedPolicy:
+    OSVPCManagedPolicy:
       Type: 'AWS::IAM::ManagedPolicy'
       Properties:
+        Description: 'Permissions to setup VPC connectivity'
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -138,43 +219,43 @@ resources:
                 - 'ec2:DescribeVpcs'
               Resource: "*"
 
-    ElasticVPC:
-      Type: AWS::EC2::VPC
-      Properties:
-        CidrBlock: "10.0.0.0/16"
-        EnableDnsSupport: true
-        EnableDnsHostnames: true
-        Tags:
-          - Key: Name
-            Value: qldb-streams-elastic
+#    ElasticVPC:
+ #     Type: AWS::EC2::VPC
+  #    Properties:
+   #     CidrBlock: "10.0.0.0/16"
+    #    EnableDnsSupport: true
+     #   EnableDnsHostnames: true
+      #  Tags:
+       #   - Key: Name
+        #    Value: qldb-streams-elastic
 
-    ElasticSubnetA:
-      DependsOn: ElasticVPC
-      Type: AWS::EC2::Subnet
-      Properties:
-        VpcId:
-          Ref: ElasticVPC
-        AvailabilityZone: ${self:provider.region}a
-        CidrBlock: "10.0.2.0/24"
-        Tags:
-          - Key: Name
-            Value: qldb-streams-es-a
+#    ElasticSubnetA:
+ #     DependsOn: ElasticVPC
+  #    Type: AWS::EC2::Subnet
+   #   Properties:
+    #    VpcId:
+     #     Ref: ElasticVPC
+      #  AvailabilityZone: ${self:provider.region}a
+       # CidrBlock: "10.0.2.0/24"
+        #Tags:
+         # - Key: Name
+          #  Value: qldb-streams-es-a
         
-    ElasticSecurityGroup:
-      DependsOn: ElasticVPC
-      Type: AWS::EC2::SecurityGroup
-      Properties:
-        GroupDescription: SecurityGroup for Elasticsearch
-        VpcId:
-          Ref: ElasticVPC
-        SecurityGroupIngress: 
-          - FromPort: '443' 
-            IpProtocol: tcp 
-            ToPort: '443' 
-            CidrIp: 0.0.0.0/0
-        Tags:
-          - Key: Name
-            Value: qldb-streams-es-sg
+#    ElasticSecurityGroup:
+ #     DependsOn: ElasticVPC
+  #    Type: AWS::EC2::SecurityGroup
+   #   Properties:
+    #    GroupDescription: SecurityGroup for Elasticsearch
+     #   VpcId:
+      #    Ref: ElasticVPC
+       # SecurityGroupIngress: 
+        #  - FromPort: 443
+         #   IpProtocol: tcp 
+          #  ToPort: 443
+           # CidrIp: 0.0.0.0/0
+        #Tags:
+         # - Key: Name
+          #  Value: qldb-streams-es-sg
 
     licenceQldbStreamsES:
       Type: AWS::Kinesis::Stream
@@ -234,15 +315,11 @@ resources:
 
 Outputs:
   ESDomainArn: 
-    Value: !GetAtt ElasticsearchDomain.DomainArn 
+    Value: !GetAtt AWS::OpenSearchService::Domain.Arn
     Export:
-      Name: "#{AWS::StackName}:${self:provider.stage}:ElasticSearch:DomainArn"
+      Name: "#{AWS::StackName}:${self:provider.stage}:OpenSearchService:Domain.Arn"
   ESDomainEndpoint: 
-    Value: !GetAtt ElasticsearchDomain.DomainEndpoint 
+    Value: !GetAtt AWS::OpenSearchService::Domain.DomainEndpoint 
     Export:
-      Name: "#{AWS::StackName}:${self:provider.stage}:ElasticSearch:DomainEndpoint"
-  SecurityGroupId: 
-    Value: !Ref ElasticSecurityGroup
-  SubnetId: 
-    Value: !Ref ElasticSubnetA
+      Name: "#{AWS::StackName}:${self:provider.stage}:OpenSearchService:Domain.DomainEndpoint"
             

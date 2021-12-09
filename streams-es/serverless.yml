@@ -1,5 +1,5 @@
 service: qldb-streams-es
-framework: '2'
+frameworkVersion: '2'
 
 provider:
   name: aws
@@ -8,11 +8,13 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: eu-west-1
   stackName: ${self:service}
+  lambdaHashingVersion: "20201221"
   tracing:
     apiGateway: true
     lambda: true # Optional, can be true (true equals 'Active'), 'Active' or 'PassThrough'
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED	: "1"
+
 
 plugins:
   - serverless-iam-roles-per-function
@@ -20,6 +22,8 @@ plugins:
   - serverless-esbuild
 
 functions:
+
+  # function to consume data records from Kinesis and write to OpenSearch
   streamHandler:
     name: qldb-streams-es-${self:provider.stage}
     handler: functions/qldb-streams-es.handler
@@ -34,11 +38,6 @@ functions:
           maximumRetryAttempts: 10
           enabled: true
           arn: !GetAtt licenceQldbStreamsES.Arn
-#    vpc:
- #     securityGroupIds:
-  #      - !GetAtt ElasticSecurityGroup.GroupId
-   #   subnetIds:
-    #    - Ref: ElasticSubnetA
     iamRoleStatementsName: qldb-streams-es-lambda-role-${self:provider.stage}
     iamRoleStatements: # Grant privilege read from Kinesis work stream 
       - Effect: Allow 
@@ -68,6 +67,7 @@ functions:
 resources:
   Resources:
 
+    # Cognito User Pool for the user directory to control access to OpenSearch Dashboards
     OSUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
@@ -86,6 +86,7 @@ resources:
             Mutable: true
             Required: true
 
+    # 
     OSUserPoolDomain: 
       Type: AWS::Cognito::UserPoolDomain 
       Properties:
@@ -96,16 +97,75 @@ resources:
       Type: AWS::Cognito::UserPoolClient
       Properties:
         ClientName: !Sub ${AWS::StackName}-client
-        # GenerateSecret: false
+        GenerateSecret: false
         UserPoolId: !Ref OSUserPool
 
+    # Creates a federated Identity pool
     OSIdentityPool:
       Type: AWS::Cognito::IdentityPool
       Properties:
+        IdentityPoolName: qldb-demo-identity-pool
         AllowUnauthenticatedIdentities: true
         CognitoIdentityProviders:
           - ClientId: !Ref OSUserPoolClient
             ProviderName: !GetAtt OSUserPool.ProviderName
+
+    # Create a role for unauthorized acces to AWS resources. Currently no access. Only allows users in the previously created Identity Pool
+    CognitoUnAuthorizedRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        AssumeRolePolicyDocument: 
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal: 
+                Federated: "cognito-identity.amazonaws.com"
+              Action: 
+                - "sts:AssumeRoleWithWebIdentity"
+              Condition:
+                StringEquals: 
+                  "cognito-identity.amazonaws.com:aud": !Ref OSIdentityPool
+                "ForAnyValue:StringLike":
+                  "cognito-identity.amazonaws.com:amr": unauthenticated
+
+
+    # Create a role for authorized acces to AWS resources. This only allows access to the OpenSearch domain
+    # Only allows users in the previously created Identity Pool
+    CognitoAuthorizedRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        AssumeRolePolicyDocument: 
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal: 
+                Federated: "cognito-identity.amazonaws.com"
+              Action: 
+                - "sts:AssumeRoleWithWebIdentity"
+              Condition:
+                StringEquals: 
+                  "cognito-identity.amazonaws.com:aud": !Ref OSIdentityPool
+                "ForAnyValue:StringLike":
+                  "cognito-identity.amazonaws.com:amr": authenticated
+        Policies:
+          - PolicyName: "CognitoAuthorizedPolicy"
+            PolicyDocument: 
+              Version: "2012-10-17"
+              Statement: 
+                - Effect: "Allow"
+                  Action:
+                    - "es:ESHttp*"
+                  Resource: "arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*"
+
+
+    # Assigns the roles to the Identity Pool
+    IdentityPoolRoleMapping:
+      Type: "AWS::Cognito::IdentityPoolRoleAttachment"
+      Properties:
+        IdentityPoolId: !Ref OSIdentityPool
+        Roles:
+          authenticated: !GetAtt CognitoAuthorizedRole.Arn
+          unauthenticated: !GetAtt CognitoUnAuthorizedRole.Arn
 
     OSCognitoRole:
       Type: 'AWS::IAM::Role'
@@ -123,7 +183,6 @@ resources:
         Path: "/"
         ManagedPolicyArns:
           - arn:aws:iam::aws:policy/AmazonOpenSearchServiceCognitoAccess
-
 
     OpenSearch:
       Type: AWS::OpenSearchService::Domain
@@ -148,114 +207,22 @@ resources:
         AccessPolicies:
           Version: "2012-10-17"
           Statement:
-            - 
-              Effect: Allow
-              Principal:
-                AWS: "*"
-              Action: es:ESHttp*
-              Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*
-#        VPCOptions: 
- #         SecurityGroupIds: 
-  #          - !Ref ElasticSecurityGroup
-   #       SubnetIds: 
-    #        - !Ref ElasticSubnetA 
-        LogPublishingOptions:
-          ES_APPLICATION_LOGS:
-              CloudWatchLogsLogGroupArn: 'arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:/aws/opensearch/domains/opensearch-application-logs'
-              Enabled: true
-          SEARCH_SLOW_LOGS:
-              CloudWatchLogsLogGroupArn: 'arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:/aws/opensearch/domains/opensearch-slow-logs'
-              Enabled: true
-          INDEX_SLOW_LOGS:
-              CloudWatchLogsLogGroupArn: 'arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:log-group:/aws/opensearch/domains/opensearch-index-slow-logs'
-              Enabled: true
-        AdvancedOptions:
-          rest.action.multi.allow_explicit_index: true
-          override_main_response_version: true
-
-
-#        EncryptionAtRestOptions:
-#          Enabled: true
-#          KmsKeyId: arn:aws:kms:${self:provider.region}:#{AWS::AccountId}:alias/aws/es
-#        NodeToNodeEncryptionOptions:
-#          Enabled: true
-#        DomainEndpointOptions:
-#          EnforceHTTPS: true
-
-
-    OSVPCRole:
-      Type: 'AWS::IAM::Role'
-      Properties:
-        Description: 'Service linked role to setup VPC connectivity'
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
             - Effect: Allow
               Principal:
-                Service:
-                  - es.amazonaws.com
-              Action:
-                - 'sts:AssumeRole'
-        Path: /
-        ManagedPolicyArns:
-          - !Ref OSVPCManagedPolicy
+                AWS: 
+                  - !GetAtt CognitoUnAuthorizedRole.Arn
+              Action: es:ESHttp*
+              Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*
+            - Effect: Allow
+              Principal:
+                  AWS: "*"
+              Action: es:ESHttp*
+              Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*
+              Condition:
+                "StringLike":
+                  "aws:PrincipalArn": arn:aws:iam::#{AWS::AccountId}:role/qldb-streams-es-lambda-role-${self:provider.stage}
 
-    OSVPCManagedPolicy:
-      Type: 'AWS::IAM::ManagedPolicy'
-      Properties:
-        Description: 'Permissions to setup VPC connectivity'
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Sid: ElasticVPCPermissions
-              Effect: Allow
-              Action:
-                - 'ec2:CreateNetworkInterface'
-                - 'ec2:DeleteNetworkInterface'
-                - 'ec2:DescribeNetworkInterfaces'
-                - 'ec2:ModifyNetworkInterfaceAttribute'
-                - 'ec2:DescribeSecurityGroups'
-                - 'ec2:DescribeSubnets'
-                - 'ec2:DescribeVpcs'
-              Resource: "*"
 
-#    ElasticVPC:
- #     Type: AWS::EC2::VPC
-  #    Properties:
-   #     CidrBlock: "10.0.0.0/16"
-    #    EnableDnsSupport: true
-     #   EnableDnsHostnames: true
-      #  Tags:
-       #   - Key: Name
-        #    Value: qldb-streams-elastic
-
-#    ElasticSubnetA:
- #     DependsOn: ElasticVPC
-  #    Type: AWS::EC2::Subnet
-   #   Properties:
-    #    VpcId:
-     #     Ref: ElasticVPC
-      #  AvailabilityZone: ${self:provider.region}a
-       # CidrBlock: "10.0.2.0/24"
-        #Tags:
-         # - Key: Name
-          #  Value: qldb-streams-es-a
-        
-#    ElasticSecurityGroup:
- #     DependsOn: ElasticVPC
-  #    Type: AWS::EC2::SecurityGroup
-   #   Properties:
-    #    GroupDescription: SecurityGroup for Elasticsearch
-     #   VpcId:
-      #    Ref: ElasticVPC
-       # SecurityGroupIngress: 
-        #  - FromPort: 443
-         #   IpProtocol: tcp 
-          #  ToPort: 443
-           # CidrIp: 0.0.0.0/0
-        #Tags:
-         # - Key: Name
-          #  Value: qldb-streams-es-sg
 
     licenceQldbStreamsES:
       Type: AWS::Kinesis::Stream
@@ -313,13 +280,20 @@ resources:
           Fn::GetAtt: [QLDBStreamRole, Arn]
         StreamName: QLDBStream-elastic-${self:provider.stage}
 
-Outputs:
-  ESDomainArn: 
-    Value: !GetAtt AWS::OpenSearchService::Domain.Arn
-    Export:
-      Name: "#{AWS::StackName}:${self:provider.stage}:OpenSearchService:Domain.Arn"
-  ESDomainEndpoint: 
-    Value: !GetAtt AWS::OpenSearchService::Domain.DomainEndpoint 
-    Export:
-      Name: "#{AWS::StackName}:${self:provider.stage}:OpenSearchService:Domain.DomainEndpoint"
-            
+  Outputs:
+    UserPoolId:
+      Value: !Ref OSUserPool
+      Export:
+        Name: "UserPool::Id"
+    UserPoolClientId:
+      Value: !Ref OSUserPoolClient
+      Export:
+        Name: "UserPoolClient::Id"
+    UserPoolURL:
+      Value: !GetAtt OSUserPool.ProviderURL
+      Export:
+        Name: "UserPool::ProviderURL"
+    IdentityPoolId:
+      Value: !Ref OSIdentityPool
+      Export:
+        Name: "IdentityPool::Id"            

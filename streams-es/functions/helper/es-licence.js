@@ -16,7 +16,7 @@ const creds = new AWS.EnvironmentCredentials('AWS');
  * @returns {Promise} Promise - object with the result of the HTTP response
  */
 async function sendRequest({ httpMethod, requestPath, payload }) {
-  Log.debug(`In sendRequest with method ${httpMethod} path ${requestPath} and payload ${payload}`);
+  Log.debug(`In sendRequest with method ${httpMethod} path ${requestPath} and payload ${JSON.stringify(payload)}`);
   const request = new AWS.HttpRequest(endpoint, REGION);
 
   request.method = httpMethod;
@@ -34,7 +34,7 @@ async function sendRequest({ httpMethod, requestPath, payload }) {
       null,
       (response) => {
         const { statusCode, statusMessage, headers } = response;
-        Log.debug(`statusCode ${statusCode} statusMessage ${statusMessage} headers ${headers}`);
+        Log.debug(`statusCode ${statusCode} statusMessage ${statusMessage} headers ${JSON.stringify(headers)}`);
 
         let body = '';
         response.on('data', (chunk) => {

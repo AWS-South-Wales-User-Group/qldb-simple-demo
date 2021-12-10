@@ -86,31 +86,23 @@ resources:
             Mutable: true
             Required: true
 
-    # 
+    # The domain name for the Cognito user pool
     OSUserPoolDomain: 
       Type: AWS::Cognito::UserPoolDomain 
       Properties:
         UserPoolId: !Ref OSUserPool 
         Domain: "qldb-opensearch-demo"
 
-    OSUserPoolClient:
-      Type: AWS::Cognito::UserPoolClient
-      Properties:
-        ClientName: !Sub ${AWS::StackName}-client
-        GenerateSecret: false
-        UserPoolId: !Ref OSUserPool
-
-    # Creates a federated Identity pool
+    # Creates a federated Identity pool. No Cognito Identity Providers
+    # are set, as these are created by the OpenSearch service
     OSIdentityPool:
       Type: AWS::Cognito::IdentityPool
       Properties:
         IdentityPoolName: qldb-demo-identity-pool
         AllowUnauthenticatedIdentities: true
-        CognitoIdentityProviders:
-          - ClientId: !Ref OSUserPoolClient
-            ProviderName: !GetAtt OSUserPool.ProviderName
 
-    # Create a role for unauthorized acces to AWS resources. Currently no access. Only allows users in the previously created Identity Pool
+    # Create a role for unauthorized acces to AWS resources. Currently no access. 
+    # Only allows users in the previously created Identity Pool
     CognitoUnAuthorizedRole:
       Type: "AWS::IAM::Role"
       Properties:
@@ -167,6 +159,7 @@ resources:
           authenticated: !GetAtt CognitoAuthorizedRole.Arn
           unauthenticated: !GetAtt CognitoUnAuthorizedRole.Arn
 
+    # Create the Cognito role to allow OpenSearch to configure your user pool and identity pool
     OSCognitoRole:
       Type: 'AWS::IAM::Role'
       Properties:
@@ -184,6 +177,7 @@ resources:
         ManagedPolicyArns:
           - arn:aws:iam::aws:policy/AmazonOpenSearchServiceCognitoAccess
 
+    # Create the OpenSearch domain
     OpenSearch:
       Type: AWS::OpenSearchService::Domain
       Properties:
@@ -222,20 +216,21 @@ resources:
                 "StringLike":
                   "aws:PrincipalArn": arn:aws:iam::#{AWS::AccountId}:role/qldb-streams-es-lambda-role-${self:provider.stage}
 
-
-
+    # Create the Kinesis Data Stream that consumers from the QLDB Stream
     licenceQldbStreamsES:
       Type: AWS::Kinesis::Stream
       Properties: 
         Name: QLDBBicycleLicence-es-${self:provider.stage}
         ShardCount: 1
 
+    
     StreamHandlerLambdaFunction:
       Type: AWS::Lambda::Function
       Properties:
         TracingConfig:
           Mode: "Active"
 
+    # Create the role for QLDB to write records to Kinesis
     QLDBStreamRole:
       Type: 'AWS::IAM::Role'
       Properties:
@@ -267,6 +262,7 @@ resources:
               Resource: 
                 Fn::GetAtt: [licenceQldbStreamsES, Arn]
 
+    # Create the QLDB Stream
     ESQLDBStream:
       Type: AWS::QLDB::Stream
       Properties: 
@@ -285,10 +281,6 @@ resources:
       Value: !Ref OSUserPool
       Export:
         Name: "UserPool::Id"
-    UserPoolClientId:
-      Value: !Ref OSUserPoolClient
-      Export:
-        Name: "UserPoolClient::Id"
     UserPoolURL:
       Value: !GetAtt OSUserPool.ProviderURL
       Export:

@@ -38,8 +38,23 @@ async function processIon(ionRecord) {
 
   // Check to see if the data section exists.
   if (ionRecord.payload.revision.data == null) {
-    Log.debug('No data section so handle as a delete');
-    response = await sendRequest({ httpMethod: 'DELETE', requestPath: `/licence/_doc/${id}?version=${version}&version_type=external` });
+    Log.debug('No data section so handle as a delete. Instead of a delete we are going to put an isDeleted marker on the record');
+
+    const updateDoc = {
+      version,
+      isDeleted: true,
+    };
+
+    const doc = {
+      doc: updateDoc,
+    };
+
+    response = await sendRequest({
+      httpMethod: 'POST',
+      requestPath: `/licence/_update/${id}`,
+      payload: doc,
+    });
+
     Log.debug(`RESPONSE: ${JSON.stringify(response)}`);
   } else {
     const points = ionRecord.payload.revision.data.penaltyPoints.numberValue();

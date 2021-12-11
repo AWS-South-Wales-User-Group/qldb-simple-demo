@@ -57,7 +57,7 @@ async function processIon(ionRecord) {
     });
 
     const { statusCode } = response;
-    Log.debug(`Status Code: ${statusCode}`);
+    Log.debug(`Status Code: ${statusCode} Response: ${JSON.stringify(response)}`);
     const metrics = createMetricsLogger();
     metrics.setNamespace('OpenSearch Status Codes');
     metrics.putDimensions({ StatusCode: `HTTP_${statusCode}` });
@@ -87,7 +87,7 @@ async function processIon(ionRecord) {
     });
 
     const { statusCode } = response;
-    Log.debug(`Status Code: ${statusCode}`);
+    Log.debug(`Status Code: ${statusCode} Response: ${JSON.stringify(response)}`);
     const metrics = createMetricsLogger();
     metrics.setNamespace('OpenSearch Status Codes');
     metrics.putDimensions({ StatusCode: `HTTP_${statusCode}` });

@@ -11,6 +11,7 @@
   "dependencies": {
     "@dazn/lambda-powertools-logger": "^1.24.1",
     "amazon-qldb-driver-nodejs": "^1.0.0",
+    "aws-embedded-metrics": "^2.0.4",
     "aws-kinesis-agg": "^4.1.2",
     "aws-sdk": "^2.814.0",
     "aws-xray-sdk": "^3.1.0",

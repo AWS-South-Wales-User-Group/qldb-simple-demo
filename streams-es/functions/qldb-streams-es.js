@@ -6,6 +6,7 @@ const Log = require('@dazn/lambda-powertools-logger');
 const deagg = require('aws-kinesis-agg');
 const ion = require('ion-js');
 const { sendRequest } = require('./helper/es-licence');
+const { createMetricsLogger, Unit } = require('aws-embedded-metrics');
 
 const computeChecksums = true;
 const REVISION_DETAILS = 'REVISION_DETAILS';
@@ -55,7 +56,13 @@ async function processIon(ionRecord) {
       payload: doc,
     });
 
-    Log.debug(`RESPONSE: ${JSON.stringify(response)}`);
+    const { statusCode } = response;
+    Log.debug(`Status Code: ${statusCode}`);
+    const metrics = createMetricsLogger();
+    metrics.setNamespace('OpenSearch Status Codes');
+    metrics.putDimensions({ StatusCode: `HTTP_${statusCode}` });
+    metrics.putMetric('ProcessedRecords', 1, Unit.Count);
+    await metrics.flush();
   } else {
     const points = ionRecord.payload.revision.data.penaltyPoints.numberValue();
     const postcode = ionRecord.payload.revision.data.postcode.stringValue();
@@ -78,7 +85,14 @@ async function processIon(ionRecord) {
       requestPath: `/licence/_doc/${id}?version=${version}&version_type=external`,
       payload: doc,
     });
-    Log.debug(`RESPONSE: ${JSON.stringify(response)}`);
+
+    const { statusCode } = response;
+    Log.debug(`Status Code: ${statusCode}`);
+    const metrics = createMetricsLogger();
+    metrics.setNamespace('OpenSearch Status Codes');
+    metrics.putDimensions({ StatusCode: `HTTP_${statusCode}` });
+    metrics.putMetric('ProcessedRecords', 1, Unit.Count);
+    await metrics.flush();
   }
 }
 

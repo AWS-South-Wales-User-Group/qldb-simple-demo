@@ -117,7 +117,7 @@ resources:
               Condition:
                 StringEquals: 
                   "cognito-identity.amazonaws.com:aud": !Ref OSIdentityPool
-                "ForAnyValue:StringLike":
+                ForAnyValue:StringLike:
                   "cognito-identity.amazonaws.com:amr": unauthenticated
 
 
@@ -137,18 +137,8 @@ resources:
               Condition:
                 StringEquals: 
                   "cognito-identity.amazonaws.com:aud": !Ref OSIdentityPool
-                "ForAnyValue:StringLike":
+                ForAnyValue:StringLike:
                   "cognito-identity.amazonaws.com:amr": authenticated
-        Policies:
-          - PolicyName: "CognitoAuthorizedPolicy"
-            PolicyDocument: 
-              Version: "2012-10-17"
-              Statement: 
-                - Effect: "Allow"
-                  Action:
-                    - "es:ESHttp*"
-                  Resource: "arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*"
-
 
     # Assigns the roles to the Identity Pool
     IdentityPoolRoleMapping:
@@ -204,8 +194,10 @@ resources:
             - Effect: Allow
               Principal:
                 AWS: 
-                  - !GetAtt CognitoUnAuthorizedRole.Arn
-              Action: es:ESHttp*
+                  - !GetAtt CognitoAuthorizedRole.Arn
+              Action: 
+                - es:ESHttpGet
+                - es:ESHttpPost
               Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*
             - Effect: Allow
               Principal:
@@ -213,7 +205,7 @@ resources:
               Action: es:ESHttp*
               Resource: arn:aws:es:${self:provider.region}:#{AWS::AccountId}:domain/#{AWS::StackName}/*
               Condition:
-                "StringLike":
+                StringLike:
                   "aws:PrincipalArn": arn:aws:iam::#{AWS::AccountId}:role/qldb-streams-es-lambda-role-${self:provider.stage}
 
     # Create the Kinesis Data Stream that consumers from the QLDB Stream
@@ -222,7 +214,6 @@ resources:
       Properties: 
         Name: QLDBBicycleLicence-es-${self:provider.stage}
         ShardCount: 1
-
     
     StreamHandlerLambdaFunction:
       Type: AWS::Lambda::Function

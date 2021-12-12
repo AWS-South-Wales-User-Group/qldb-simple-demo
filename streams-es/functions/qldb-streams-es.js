@@ -5,8 +5,8 @@
 const Log = require('@dazn/lambda-powertools-logger');
 const deagg = require('aws-kinesis-agg');
 const ion = require('ion-js');
-const { sendRequest } = require('./helper/es-licence');
 const { createMetricsLogger, Unit } = require('aws-embedded-metrics');
+const { sendRequest } = require('./helper/es-licence');
 
 const computeChecksums = true;
 const REVISION_DETAILS = 'REVISION_DETAILS';

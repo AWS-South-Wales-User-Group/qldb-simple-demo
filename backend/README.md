@@ -76,6 +76,13 @@ Delete Licence is an HTTP DELETE using the following JSON format
 ### Get Licence
 Get Licence is an HTTP GET using the licence ID
 
+**Dec-2021**
+
+* Update permissions mode to STANDARD from ALLOW_ALL
+* Switch webpack to esbuild
+* Update to new fine grained permissions
+* Update to Node14
+
 
 **Jun-27-2020**
 Updated to use Amazon QLDB Nodejs Driver v1.0.0. Most significant update is the switch from `PooledQldbDriver` to the standard `QldbDriver` which now includes the pooling functionality. The `executeLambda` method is now made available on the driver instance, so all code to create `QldbSession` instance and close the session is removed.

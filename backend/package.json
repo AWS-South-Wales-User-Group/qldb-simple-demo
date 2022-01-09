@@ -4,7 +4,8 @@
   "description": "Simple demo for QLDB",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint . --fix"
+    "lint": "eslint . --fix",
+    "sls": "serverless"
   },
   "repository": {
     "type": "git",
@@ -17,7 +18,10 @@
   },
   "homepage": "https://github.com/mlewis7127/qldb-simple-demo#readme",
   "dependencies": {
-    "@dazn/lambda-powertools-logger": "^1.24.1",
+    "@aws-lambda-powertools/logger": "^0.2.0",
+    "@aws-lambda-powertools/metrics": "^0.2.0",
+    "@aws-lambda-powertools/tracer": "^0.2.0",
+    "@middy/core": "^2.5.4",
     "amazon-qldb-driver-nodejs": "^1.0.0",
     "aws-sdk": "^2.814.0",
     "aws-xray-sdk-core": "^3.1.0",
@@ -30,7 +34,7 @@
     "eslint": "^7.7.0",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.0",
-    "serverless": "^2.67.0",
+    "serverless": "^2.70.0",
     "serverless-aws-documentation": "^1.1.0",
     "serverless-esbuild": "^1.22.0",
     "serverless-iam-roles-per-function": "^3.2.0-e97ab49",

@@ -15,6 +15,9 @@ provider:
   environment:
     AWS_NODEJS_CONNECTION_REUSE_ENABLED	: "1"
     LEDGER_NAME: qldb-simple-demo-${self:provider.stage}
+    LOG_LEVEL: WARN
+    POWERTOOLS_METRICS_NAMESPACE: ${self:service}
+    POWERTOOLS_LOGGER_SAMPLE_RATE: 0.2
   iam:
     role:
       statements:
@@ -38,6 +41,8 @@ functions:
   createLicence:
     name: create-licence-${self:provider.stage}
     handler: functions/create-licence.handler
+    environment:
+      POWERTOOLS_SERVICE_NAME: createLicence
     iamRoleStatementsInherit: true
     iamRoleStatementsName: qldb-simple-demo-createLicence
     iamRoleStatements:
@@ -56,6 +61,8 @@ functions:
   updateLicence:
     name: update-licence-${self:provider.stage}
     handler: functions/update-licence.handler
+    environment:
+      POWERTOOLS_SERVICE_NAME: updateLicence
     iamRoleStatementsInherit: true
     iamRoleStatementsName: qldb-simple-demo-updateLicence
     iamRoleStatements:
@@ -73,6 +80,8 @@ functions:
   updateContact:
     name: update-contact-${self:provider.stage}
     handler: functions/update-contact.handler
+    environment:
+      POWERTOOLS_SERVICE_NAME: updateContact
     iamRoleStatementsInherit: true
     iamRoleStatementsName: qldb-simple-demo-updateContact
     iamRoleStatements:
@@ -90,6 +99,8 @@ functions:
   deleteLicence:
     name: delete-licence-${self:provider.stage}
     handler: functions/delete-licence.handler
+    environment:
+      POWERTOOLS_SERVICE_NAME: deleteLicence
     iamRoleStatementsInherit: true
     iamRoleStatementsName: qldb-simple-demo-deleteLicence
     iamRoleStatements:
@@ -107,6 +118,8 @@ functions:
   getLicence:
     name: get-licence-${self:provider.stage}
     handler: functions/get-licence.handler
+    environment:
+      POWERTOOLS_SERVICE_NAME: getLicence
     iamRoleStatementsInherit: true
     iamRoleStatementsName: qldb-simple-demo-getLicence
     iamRoleStatements:
@@ -135,6 +148,7 @@ functions:
     timeout: 6
     environment:
       TABLE_NAME: BicycleLicence
+      POWERTOOLS_SERVICE_NAME: createTable
 
   createIndex:
     name: qldb-demo-index-${self:provider.stage}
@@ -154,6 +168,7 @@ functions:
       INDEX_NAME_1: GUID
       INDEX_NAME_2: Email
       INDEX_NAME_3: Telephone
+      POWERTOOLS_SERVICE_NAME: createIndex
 
 resources:
   Resources:

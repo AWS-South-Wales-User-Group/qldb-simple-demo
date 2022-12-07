@@ -24,7 +24,7 @@
     "eslint": "^7.7.0",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.0",
-    "serverless": "^2.68.0",
+    "serverless": "^3.25.1",
     "serverless-cloudformation-sub-variables": "^0.2.1",
     "serverless-esbuild": "^1.22.2",
     "serverless-iam-roles-per-function": "^3.2.0-e97ab49"
